@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09131f">
+  <title>Relay — Interactive Architecture &amp; Code Visualizer</title>
+  <style>
+    :root { color-scheme: dark; --bg:#09131f; --panel:#111e2d; --card:#17283a; --line:#283d51; --ink:#edf4fa; --muted:#97adc0; --cyan:#61c7e7; --green:#73d4ad; --purple:#b29afa; --orange:#efad7d; --red:#ff8d99; --mono:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:14px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
+    button,input,select,textarea { font:inherit; }
+    button,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
+    button { cursor:pointer; }
+    button:disabled { opacity:.4; cursor:not-allowed; }
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible { outline:2px solid var(--cyan); outline-offset:4px; }
+    [hidden] { display:none!important; }
+    a { color:var(--cyan); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    header { min-height:86px; padding:17px 28px; display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid var(--line); background:#101c2b; }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .logo { display:grid; place-items:center; width:43px; height:43px; border-radius:13px; background:var(--green); color:#0c2725; font-size:33px; font-weight:800; line-height:1; padding-bottom:6px; }
+    h1 { margin:0; font-size:20px; letter-spacing:-.7px; }
+    .subtitle { margin:3px 0 0; color:var(--muted); font-size:11px; }
+    .top-actions { display:flex; align-items:center; gap:16px; font-size:12px; }
+    .badge { border:1px solid #426c6b; background:#163332; color:var(--green); border-radius:20px; padding:5px 12px; font:10px/1.5 var(--mono); letter-spacing:1px; }
+    .badge.live { color:var(--orange); border-color:#816048; background:#35291f; }
+    .button { border:1px solid #365069; background:#1a2d41; color:var(--ink); border-radius:7px; padding:8px 12px; font-size:12px; }
+    .button:hover:not(:disabled) { background:#263d55; border-color:#63839e; }
+    .button.primary { background:var(--green); color:#09241c; border-color:var(--green); font-weight:700; }
+    .button.small { padding:5px 9px; font-size:11px; }
+    .modes { padding:15px 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--line); }
+    .segmented { display:flex; gap:4px; background:#06101b; padding:4px; border:1px solid var(--line); border-radius:9px; }
+    .segmented button { border:0; border-radius:6px; background:none; color:var(--muted); padding:7px 15px; font-size:12px; }
+    .segmented button[aria-selected=true] { background:#253d53; color:var(--ink); }
+    .mode-note { margin:0; font-size:11px; color:var(--muted); }
+    .toolbar { padding:13px 28px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; background:#0d1928; border-bottom:1px solid var(--line); }
+    .scenario { border:1px solid var(--line); border-radius:7px; padding:7px 11px; font-size:11px; background:#142335; color:var(--muted); }
+    .scenario[aria-pressed=true] { border-color:var(--green); color:var(--green); background:#16332f; }
+    .toolbar-label { font:10px var(--mono); color:var(--muted); letter-spacing:1px; margin-right:3px; }
+    .playback { margin-left:auto; display:flex; align-items:center; gap:7px; }
+    select,input,textarea { background:#0a1726; border:1px solid #365069; border-radius:6px; color:var(--ink); padding:8px 10px; min-width:0; }
+    select { font-size:12px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) 365px; align-items:start; }
+    .workspace { min-width:0; padding:22px; background:radial-gradient(ellipse at 45% 30%,#14293e 0%,#09131f 75%); }
+    .canvas-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:0 4px 12px; }
+    .eyebrow { font:10px var(--mono); color:var(--green); letter-spacing:1.7px; }
+    h2 { font-size:21px; line-height:1.3; margin:7px 0; letter-spacing:-.6px; }
+    .canvas-heading p { color:var(--muted); font-size:12px; margin:0; }
+    .legend { display:flex; gap:13px; font-size:10px; color:var(--muted); flex-wrap:wrap; margin-top:5px; }
+    .legend span::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--cyan); margin-right:5px; }
+    .legend span:nth-child(2)::before { background:var(--green); }
+    .legend span:nth-child(3)::before { background:var(--purple); }
+    .canvas-scroll { width:100%; overflow:auto; border:1px solid var(--line); border-radius:12px; background-image:radial-gradient(#33485a55 1px,transparent 1px); background-size:23px 23px; }
+    #diagram { display:block; width:100%; min-width:880px; height:auto; }
+    .wire { fill:none; stroke:#344b60; stroke-width:2; opacity:.8; marker-end:url(#arrow); }
+    .wire.active { stroke:var(--green); stroke-width:3; opacity:1; filter:drop-shadow(0 0 5px #73d4ad55); }
+    .wire.return { stroke:#8a674e; stroke-dasharray:5 5; }
+    .node { cursor:pointer; outline:none; }
+    .node rect { fill:#132538; stroke:#3a5067; stroke-width:1.4; transition:fill .2s,stroke .2s; }
+    .node:hover rect,.node:focus-visible rect { fill:#20384e; stroke:var(--cyan); }
+    .node.visited rect { stroke:#527d72; fill:#17332f; }
+    .node.active rect { stroke:var(--green); stroke-width:2.8; fill:#1b4239; filter:drop-shadow(0 0 9px #73d4ad30); }
+    .node.selected rect { stroke:var(--cyan); stroke-width:2.5; }
+    .node.skipped rect { stroke-dasharray:5 4; opacity:.5; }
+    .node.failed rect { stroke:var(--red); fill:#3e2533; }
+    .node text { pointer-events:none; }
+    .node-kicker { fill:#85a1b5; font:11px var(--mono); letter-spacing:.6px; }
+    .node-title { fill:#edf4fa; font-size:19px; font-weight:600; }
+    .node-file { fill:#97adc0; font:11px var(--mono); }
+    .svg-label { fill:#7893a8; font:11px var(--mono); letter-spacing:1px; }
+    #packet { fill:var(--green); filter:drop-shadow(0 0 7px var(--green)); pointer-events:none; }
+    .step-strip { display:flex; align-items:flex-start; gap:14px; margin-top:17px; padding:17px; background:#142638; border:1px solid #355066; border-radius:10px; }
+    .step-number { flex-shrink:0; background:#254939; color:var(--green); border-radius:7px; padding:7px 10px; font:12px var(--mono); }
+    .step-strip strong { font-size:13px; display:block; margin-bottom:4px; }
+    .step-strip p { margin:0; font-size:12px; color:var(--muted); line-height:1.8; }
+    .progress { margin-top:12px; height:3px; border-radius:3px; background:#26394b; overflow:hidden; }
+    .progress span { display:block; height:100%; background:var(--green); width:0; transition:width .15s; }
+    .timeline { display:flex; flex-wrap:wrap; gap:6px; margin:13px 0 0; }
+    .timeline button { background:#142334; color:#8da6ba; border:1px solid #30485d; border-radius:5px; font:10px var(--mono); padding:5px 8px; }
+    .timeline button[aria-current=step] { background:#204737; color:var(--green); border-color:var(--green); }
+    aside { border-left:1px solid var(--line); min-height:100%; background:#101d2c; }
+    .tabs { display:flex; border-bottom:1px solid var(--line); }
+    .tabs button { flex:1; border:0; border-bottom:2px solid transparent; background:none; color:var(--muted); font-size:12px; padding:15px 8px; }
+    .tabs button[aria-selected=true] { color:var(--cyan); border-bottom-color:var(--cyan); }
+    .pane { padding:21px; }
+    .file-label { font:11px/1.7 var(--mono); color:var(--cyan); overflow-wrap:anywhere; }
+    .inspector-title { font-size:20px; margin:9px 0; }
+    .body-copy { color:var(--muted); font-size:12px; line-height:1.9; }
+    .field-label { font:10px var(--mono); letter-spacing:1px; color:var(--green); margin:19px 0 7px; }
+    .code { margin:0; padding:12px; border:1px solid #2c4155; background:#0a1623; color:#c5d9e9; border-radius:7px; font:11px/1.9 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+    .call-list { display:flex; flex-direction:column; gap:6px; }
+    .call-list button { text-align:left; padding:9px 11px; background:#172c40; border:1px solid #2b455b; border-radius:6px; color:var(--ink); font:11px var(--mono); overflow-wrap:anywhere; }
+    .hint { font-size:11px; line-height:1.8; color:var(--muted); }
+    .notice { margin:14px 28px 0; border:1px solid #8a674e; background:#332a23; color:#f2cba5; border-radius:8px; padding:10px 14px; font-size:12px; }
+    .log { max-height:520px; overflow:auto; display:flex; flex-direction:column; gap:7px; }
+    .log-entry { border:1px solid var(--line); border-left:2px solid var(--green); border-radius:5px; padding:10px; background:#0b1826; }
+    .log-entry summary { font:11px/1.7 var(--mono); color:#c3d9e6; cursor:pointer; overflow-wrap:anywhere; }
+    .log-entry pre { font:10px/1.8 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; color:var(--muted); margin-top:10px; max-height:240px; overflow:auto; }
+    .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; margin-bottom:16px; }
+    .stat { background:#17283a; border:1px solid var(--line); border-radius:7px; padding:11px; }
+    .stat small { display:block; font:9px var(--mono); color:var(--muted); letter-spacing:1px; }
+    .stat strong { display:block; margin-top:6px; font:19px var(--mono); color:var(--green); overflow-wrap:anywhere; }
+    .sources { margin-top:13px; }
+    .source { padding:12px; border:1px solid var(--line); border-radius:7px; margin:10px 0; font-size:11px; }
+    .source summary { cursor:pointer; color:var(--green); overflow-wrap:anywhere; }
+    .source p { white-space:pre-wrap; max-height:230px; overflow:auto; color:var(--muted); }
+    .live-panel { border:1px solid var(--line); border-radius:10px; background:#142536; padding:18px; margin-bottom:18px; }
+    .live-panel form { display:flex; flex-wrap:wrap; align-items:end; gap:10px; }
+    .live-panel label { display:flex; flex-direction:column; gap:5px; font-size:11px; color:var(--muted); }
+    .live-panel .question-label { flex:1 1 380px; }
+    textarea { resize:vertical; min-height:65px; max-height:180px; width:100%; font-size:13px; }
+    .live-options { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
+    .live-options input { flex:1; font:11px var(--mono); }
+    .answer { padding:15px; border:1px solid #3b615b; border-radius:8px; background:#142f2a; font-size:13px; line-height:1.9; white-space:pre-wrap; overflow-wrap:anywhere; margin-top:14px; }
+    .file-browser { margin:20px 0 0; border:1px solid var(--line); border-radius:10px; background:#102032; }
+    .file-browser>summary { cursor:pointer; padding:14px 17px; font-size:12px; color:var(--muted); }
+    .file-grid { display:grid; grid-template-columns:repeat(3,1fr); padding:0 15px 15px; gap:8px; }
+    .file-grid button { padding:10px; text-align:left; background:#182c40; border:1px solid var(--line); border-radius:6px; color:#bcd0df; font:11px/1.6 var(--mono); }
+    footer { display:flex; justify-content:space-between; gap:20px; padding:15px 28px; border-top:1px solid var(--line); color:#7e97ac; font-size:10px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .speed-seg { display:flex; gap:3px; background:#06101b; border:1px solid var(--line); border-radius:7px; padding:3px; }
+    .speed-seg button { border:0; background:none; color:var(--muted); border-radius:5px; padding:4px 9px; font:11px var(--mono); }
+    .speed-seg button[aria-pressed=true] { background:#204737; color:var(--green); }
+    .phone { border:1px solid #2b455b; border-radius:16px; background:#0a1623; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 26px #04090f80; }
+    .phone-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 13px; background:#17283a; border-bottom:1px solid #2b455b; }
+    .phone-bar strong { font-size:12px; }
+    .phone-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:6px; }
+    .phone-url { font:10px var(--mono); color:var(--muted); background:#0a1623; border-radius:6px; padding:3px 7px; }
+    .chat { display:flex; flex-direction:column; gap:9px; padding:14px; min-height:215px; max-height:340px; overflow:auto; }
+    .bubble { max-width:92%; padding:9px 12px; border-radius:12px; font-size:12px; line-height:1.75; overflow-wrap:anywhere; white-space:pre-wrap; }
+    .bubble.user { align-self:flex-end; background:#1f4f45; color:#dcf6ec; border-bottom-right-radius:3px; }
+    .bubble.agent { align-self:flex-start; background:#172c40; border:1px solid #2b455b; border-bottom-left-radius:3px; }
+    .bubble.agent strong { color:var(--green); }
+    .bubble.stage { align-self:flex-start; background:none; padding:0 3px; font:10px/1.7 var(--mono); color:var(--muted); letter-spacing:.3px; max-width:100%; }
+    .bubble.system { align-self:center; text-align:center; background:#35291f; border:1px dashed #816048; color:#f2cba5; font-size:10.5px; border-radius:8px; line-height:1.65; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; }
+    .chips button { background:#142335; border:1px solid var(--line); color:#a9c0d2; border-radius:20px; padding:5px 10px; font-size:10.5px; }
+    .chips button:hover { border-color:var(--green); color:var(--green); }
+    .phone-input { display:flex; gap:6px; padding:10px; background:#101f31; border-top:1px solid #233145; }
+    .phone-input input { flex:1; font-size:12px; padding:7px 10px; }
+    .metrics { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; margin:0 0 10px; }
+    .metrics .stat strong { font-size:15px; }
+    .terminal { background:#060f19; border:1px solid var(--line); border-radius:8px; padding:11px; font:10.5px/1.85 var(--mono); max-height:215px; overflow:auto; }
+    .term-line { overflow-wrap:anywhere; color:#9fb6c8; }
+    .term-time { color:#5f778c; }
+    .term-tag { font-weight:700; }
+    .t-guide { color:var(--cyan); } .t-run { color:var(--orange); } .t-ok { color:var(--green); } .t-skip { color:#7e97ac; } .t-fail { color:var(--red); } .t-info { color:var(--purple); }
+    .pane-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .state-panel { margin:18px 0; padding:18px; border:1px solid #355066; border-radius:12px; background:#101e2d; }
+    .state-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .state-heading h2 { font-size:19px; }
+    .schema-buttons { display:flex; flex-wrap:wrap; gap:7px; margin:12px 0; }
+    .schema-buttons button { font:11px var(--mono); }
+    .schema-buttons button[aria-pressed=true] { border-color:var(--cyan); color:var(--cyan); background:#20394b; }
+    .schema-buttons button.relevant { box-shadow:inset 0 -3px var(--green); }
+    .state-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:12px; }
+    .state-grid > div { min-width:0; }
+    .state-panel pre { max-height:320px; overflow:auto; }
+    .state-panel summary { cursor:pointer; color:var(--cyan); font-size:12px; }
+    .schema-table { width:100%; border-collapse:collapse; font-size:11px; margin:10px 0; }
+    .schema-table th,.schema-table td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:anywhere; }
+    .schema-table th { color:var(--cyan); font-family:var(--mono); }
+    .state-history { display:flex; gap:7px; flex-wrap:wrap; max-height:130px; overflow:auto; margin-top:12px; }
+    .state-history button[aria-pressed=true] { border-color:var(--green); color:var(--green); }
+    .state-summary { margin:10px 0; color:var(--green); font:12px/1.8 var(--mono); overflow-wrap:anywhere; }
+    @media(max-width:750px) { .state-grid { grid-template-columns:1fr; } }
+    @media(min-width:1800px) { .layout { grid-template-columns:minmax(0,1fr) 420px; } .workspace { padding:28px; } }
+    @media(max-width:1150px) { .layout { grid-template-columns:1fr; } aside { border-left:0; border-top:1px solid var(--line); } .pane { max-width:100%; } .playback { margin-left:0; } .log { max-height:300px; } }
+    @media(max-width:650px) { header { padding:15px; align-items:flex-start; } h1 { font-size:16px; } .subtitle { font-size:10px; } .top-actions { flex-direction:column; gap:7px; align-items:flex-end; } .top-actions .button { display:none; } .modes,.toolbar { padding:12px 15px; } .workspace { padding:13px; } .canvas-heading { flex-direction:column; gap:7px; } h2 { font-size:19px; } .file-grid { grid-template-columns:1fr; } .live-options input { flex-basis:100%; } footer { flex-direction:column; padding:15px; gap:5px; } .notice { margin:12px 15px 0; } }
+    @media(prefers-reduced-motion:reduce) { * { transition:none!important; scroll-behavior:auto!important; } }
+    @media print { body { background:white; color:black; } header,.modes,.toolbar,aside,footer,.live-panel,.file-browser,.timeline { display:none!important; } .layout { display:block; } .workspace { padding:0; } #diagram { min-width:0; } .canvas-heading p,.step-strip p { color:#46515c; } .step-strip { break-inside:avoid; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="logo">r.</span><div><h1>Relay <span style="font-weight:400;color:#97adc0">/ Architecture explorer</span></h1><p class="subtitle">Six agents · local vector retrieval · Gemini through EURI · every handoff explained</p></div></div>
+    <div class="top-actions"><span id="mode-badge" class="badge">GUIDED WALKTHROUGH</span><a id="open-app" href="http://127.0.0.1:8000/" target="_blank" rel="noopener">Open classroom ↗</a><button id="fullscreen" class="button small">Full screen</button></div>
+  </header>
+  <div class="modes"><div class="segmented" role="tablist" aria-label="Visualizer mode"><button id="mode-guide" role="tab" aria-controls="guide-toolbar" aria-selected="true">Explore the code</button><button id="mode-live" role="tab" aria-controls="live-panel" aria-selected="false">Live run / saved trace</button></div><p id="mode-note" class="mode-note">Illustrative code paths. No API requests or generated answers.</p></div>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <nav id="guide-toolbar" class="toolbar" aria-label="Walkthrough scenarios"><span class="toolbar-label">TRACE A PATH</span><div id="scenario-buttons" style="display:contents"></div><div class="playback"><button id="previous" class="button small" aria-label="Previous step">←</button><button id="play" class="button primary small">▶ Play</button><button id="next" class="button small" aria-label="Next step">→</button><button id="reset" class="button small">Reset</button><div id="speed-group" class="speed-seg" role="group" aria-label="Playback speed"><button data-speed="0.5" aria-pressed="false">0.5×</button><button data-speed="1" aria-pressed="true">1×</button><button data-speed="2" aria-pressed="false">2×</button></div></div></nav>
+  <main class="layout">
+    <section class="workspace">
+      <div id="live-panel" class="live-panel" hidden>
+        <div class="canvas-heading"><div><span class="eyebrow">ACTUAL APPLICATION EVENTS</span><h2>Watch your agents work.</h2><p id="connection-status">Connect to the app, attach a run ID, or import an exported trace.</p></div><button id="connect" class="button">Check server</button></div>
+        <form id="live-form"><label class="question-label" for="live-query">Question<textarea id="live-query" maxlength="4000" required placeholder="According to the course handbook, calculate the total fee including GST for three students."></textarea></label><label for="live-k">Top-K<select id="live-k"><option>2</option><option selected>4</option><option>6</option><option>8</option></select></label><button id="live-send" class="button primary" type="submit">Run with EURI ↑</button><button id="new-session" class="button" type="button">New session</button></form>
+        <div class="live-options"><label class="sr-only" for="run-id">Existing run ID</label><input id="run-id" maxlength="32" placeholder="Paste an existing 32-character run ID"><button id="attach" class="button small">Attach run</button><button id="detach" class="button small" disabled>Detach</button><button id="import" class="button small">Import trace JSON</button><input id="trace-file" type="file" accept=".json,application/json" hidden><button id="export" class="button small" disabled>Export trace</button></div>
+        <p class="hint">Queries use the whole document library. Upload documents in the classroom app first. Live requests consume EURI quota. Detach stops viewing; the server run continues.</p>
+        <div id="answer" class="answer" hidden></div>
+      </div>
+      <div class="canvas-heading"><div><span class="eyebrow" id="canvas-eyebrow">THE CODE, IN MOTION</span><h2 id="scenario-title">Retrieve, compute, then review.</h2><p id="scenario-description">A multi-step question connects document evidence with a real tool result.</p></div><div class="legend"><span>API / control</span><span>Evidence / state</span><span>Model / review</span></div></div>
+      <div class="canvas-scroll" aria-label="Architecture diagram; scroll horizontally on smaller screens"><svg id="diagram" viewBox="0 0 1440 810" role="img" aria-labelledby="svg-title svg-description"><title id="svg-title">Relay runtime architecture</title><desc id="svg-description">Select a node to inspect its file, function, inputs, outputs and calls. The orchestrator invokes all six agents. Services support the agents rather than acting as additional stages.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.4"/></marker></defs><g id="wires"></g><g id="nodes"></g><circle id="packet" r="5" hidden></circle></svg></div>
+      <div class="step-strip" aria-live="polite"><span id="step-number" class="step-number">READY</span><div><strong id="step-title">Choose a scenario and press Play.</strong><p id="step-detail">Click any component to inspect the exact source file and its callers. Use the arrow buttons to explain one step at a time.</p></div></div>
+      <div class="progress" role="progressbar" aria-label="Walkthrough progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-bar"></span></div><div id="timeline" class="timeline" aria-label="Jump to a walkthrough step"></div>
+      <section id="state-panel" class="state-panel" aria-labelledby="state-title">
+        <div class="state-heading"><div><span class="eyebrow">SCHEMAS + SHARED STATE</span><h2 id="state-title">How each handoff changes state</h2></div><span id="state-origin" class="badge">CODE GUIDE</span></div>
+        <p class="hint">Orchestrator.run() creates a Python dictionary. Agents read it and write their results into it. Pydantic classes validate the request and decisions; there is no State class in schemas.py.</p>
+        <div id="schema-buttons" class="schema-buttons" aria-label="Classes in app/schemas.py"></div>
+        <p class="hint">Select a class to inspect its fields. Green underlines mark the contracts used at the selected step.</p>
+        <details id="schema-detail" open><summary id="schema-title">QueryRequest · app/schemas.py</summary><p id="schema-description" class="hint"></p><table class="schema-table"><thead><tr><th scope="col">Field</th><th scope="col">Type, default and constraints</th></tr></thead><tbody id="schema-fields"></tbody></table><p id="schema-use" class="hint"></p></details>
+        <div class="state-heading"><p id="state-stage" class="state-summary">Waiting for a step.</p><button id="state-latest" class="button small" hidden>Follow latest event</button></div>
+        <p id="state-contract" class="hint"></p><p id="state-provenance" class="hint"></p>
+        <div class="state-grid"><div><p class="field-label">THIS STEP · BEFORE → AFTER</p><pre id="state-diff" class="code"></pre></div><div><p class="field-label">ACCUMULATED STATE</p><pre id="state-snapshot" class="code"></pre></div></div>
+        <details style="margin-top:12px"><summary>Inspect an earlier state transition</summary><div id="state-history" class="state-history" aria-label="State transitions"></div></details>
+      </section>
+      <details class="file-browser"><summary>Explore supporting files, tools, and tests</summary><div id="file-grid" class="file-grid"></div></details>
+    </section>
+    <aside><div class="tabs" role="tablist" aria-label="Inspector panel"><button id="tab-inspector" role="tab" aria-controls="inspector" aria-selected="true">Code</button><button id="tab-simulator" role="tab" aria-controls="simulator" aria-selected="false">Client</button><button id="tab-trace" role="tab" aria-controls="trace" aria-selected="false">Telemetry</button></div>
+      <section id="inspector" class="pane" role="tabpanel" aria-labelledby="tab-inspector"><span class="eyebrow">SELECTED COMPONENT</span><div id="inspect-file" class="file-label" style="margin-top:14px"></div><h2 id="inspect-title" class="inspector-title"></h2><p id="inspect-description" class="body-copy"></p><p class="field-label">ENTRY / CONTRACT</p><pre id="inspect-code" class="code"></pre><p class="field-label">CALLED BY</p><div id="inspect-callers" class="call-list"></div><p class="field-label">CALLS NEXT</p><div id="inspect-callees" class="call-list"></div><p class="field-label">OUTPUT / STATE CHANGE</p><pre id="inspect-output" class="code"></pre><p id="inspect-note" class="hint"></p></section>
+      <section id="simulator" class="pane" role="tabpanel" aria-labelledby="tab-simulator" hidden><span class="eyebrow">CLIENT SIMULATOR</span><h2 class="inspector-title" style="margin-bottom:6px">What the student sees.</h2><p class="body-copy" style="margin-top:0">The same conversation surface as <span class="file-label">app/static/index.html</span>. In guided mode it narrates the traced stages; in live mode it shows the real question and the reviewed answer.</p>
+        <div class="phone">
+          <div class="phone-bar"><strong><span class="phone-dot"></span>Relay classroom</strong><span class="phone-url" id="phone-url">127.0.0.1:8000</span></div>
+          <div id="chat" class="chat" aria-live="polite" aria-label="Simulated conversation"></div>
+          <div id="chat-chips" class="chips"></div>
+          <div class="phone-input"><label class="sr-only" for="sim-input">Question</label><input id="sim-input" maxlength="4000" placeholder="Type a question to find its traced code path…"><button id="sim-send" class="button primary small">Send</button></div>
+        </div>
+        <p class="hint" style="margin-top:12px">Guided mode never contacts EURI and never shows a generated answer — only the code path and each stage contract. Switch to <strong>Live run / saved trace</strong> to ask the running app for real.</p>
+      </section>
+      <section id="trace" class="pane" role="tabpanel" aria-labelledby="tab-trace" hidden><div class="stats"><div class="stat"><small id="metric-one-label">WALKTHROUGH STEPS</small><strong id="metric-one">0</strong></div><div class="stat"><small id="metric-two-label">DATA SOURCE</small><strong id="metric-two" style="font-size:13px">CODE GUIDE</strong></div></div><div class="metrics"><div class="stat"><small>EURI CALLS</small><strong id="metric-calls">—</strong></div><div class="stat"><small>PROMPT / COMPLETION TOKENS</small><strong id="metric-tokens">—</strong></div><div class="stat"><small>LAST STAGE DURATION</small><strong id="metric-latency">—</strong></div><div class="stat"><small>PASSAGES / TOOL CALLS</small><strong id="metric-evidence">—</strong></div></div><p id="metrics-caption" class="hint" style="margin:0 0 4px">Guided mode measures nothing: these counters stay empty until a real or imported run supplies them.</p><p id="trace-caption" class="hint">These entries explain a possible code path. They are not measured runtime logs.</p><div class="pane-head"><p class="field-label">EVENT STREAM</p><button id="clear-terminal" class="button small">Clear</button></div><div id="terminal" class="terminal" aria-live="polite"></div><p class="field-label">STAGE PAYLOADS</p><div id="trace-log" class="log"></div><div id="sources" class="sources"></div></section>
+    </aside>
+  </main>
+  <footer><span>Relay · one process, six specialists, persistent evidence</span><span>Visual interaction reference: <a href="https://github.com/SachinMishra-ux/sql_fashion_brand_agent/blob/main/docs/architecture_visualizer.html" target="_blank" rel="noopener">SachinMishra-ux / architecture visualizer ↗</a></span></footer>
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const NS = 'http://www.w3.org/2000/svg';
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const NODE = {
+      browser: { title:'Browser / UI', file:'app/static/app.js', kicker:'USER INTERFACE', x:40,y:50,w:235,h:90, description:'Submits uploads and questions, preserves the conversation ID, and displays events and cited passages. index.html supplies the controls; style.css supplies the responsive layout.', code:'uploadFiles(files)\nchat-form → POST /api/runs\nwatchRun(id) → EventSource\ncompleteRun(run)', callers:[], calls:['api'], output:'HTTP requests → API\nSSE events → visible trace and answer', note:'The visualizer is a separate teaching page. This node describes the main classroom UI.' },
+      api: { title:'FastAPI boundary', file:'app/main.py', kicker:'REQUEST VALIDATION', x:350,y:50,w:240,h:90, description:'create_app() wires settings, storage, the provider, retrieval, and orchestration. Endpoints validate inputs and return HTTP responses or persisted event streams.', code:'upload(file) → to_thread(ingest)\nquery(QueryRequest) → start()\nevents() → stream()', callers:['browser'], calls:['orchestrator','retriever','store','config','schemas'], output:'POST /api/runs → HTTP 202 + ID\nGET /api/runs/{id}/events → SSE', note:'Key presence is checked before starting a query. One application worker owns the in-process tasks.' },
+      orchestrator: { title:'Orchestrator', file:'app/orchestrator.py', kicker:'SEQUENCE + SHARED STATE', x:680,y:50,w:290,h:90, description:'Owns the six-stage sequence and the one-revision limit. Loads session history, calls each specialist, persists events, and saves the final turn.', code:'start(request) → create_task(run)\nrun() → invoke(agent, state)\ninvoke() → emit() → agent.run()', callers:['api'], calls:['supervisor','planning','retrieval','tool','execution','reflection','store'], output:'route → plan → sources → tools\n→ answer → critique → result', note:'Agents do not invoke the next agent themselves. Two runs execute concurrently; each session has at most one active turn.' },
+      final: { title:'Reviewed response', file:'app/orchestrator.py → app/static/app.js', kicker:'FINAL ANSWER + SOURCES', x:1150,y:50,w:250,h:90, description:'An approved answer is saved with its source passages and actual tool outputs. A second critic rejection withholds the draft and returns a safe refusal.', code:'Store.save_turn()\nStore.update_run()\nSSE done → completeRun()', callers:['orchestrator'], calls:['store','browser'], output:'completed / needs_review / failed\nanswer + citations + full trace', note:'A citation ID maps to a retrieved passage in this run. Valid IDs alone do not prove that every claim is supported.' },
+      supervisor: { title:'Supervisor', file:'app/agents.py', kicker:'01 / ROUTE', x:40,y:230,w:210,h:100, description:'Classifies intent, resolves follow-up references using conversation history, and decides whether documents or tools are needed.', code:'SupervisorAgent.run()\nllm.structured(..., Route)', callers:['orchestrator'], calls:['llm','schemas'], output:"state['route']\nneeds_retrieval / needs_tools\nstandalone_query + reason", note:'An explicit document selection forces retrieval. History resolves references but is not new document evidence.' },
+      planning: { title:'Planning', file:'app/agents.py', kicker:'02 / PLAN', x:270,y:230,w:210,h:100, description:'Turns the question and route into bounded work steps, a retrieval query, and success criteria.', code:'PlanningAgent.run()\nllm.structured(..., Plan)', callers:['orchestrator'], calls:['llm','schemas'], output:"state['plan']\nsteps + retrieval_query\n+ success_criteria", note:'The plan describes allowed work. Python still controls the execution order and available tools.' },
+      retrieval: { title:'Retrieval', file:'app/agents.py', kicker:'03 / FIND EVIDENCE', x:500,y:230,w:210,h:100, description:'Searches documents when required. Runs local embedding and search work in a worker thread, or records an explicit skip.', code:'RetrievalAgent.run()\nto_thread(retriever.search, ...)', callers:['orchestrator'], calls:['retriever'], output:"state['sources']\nranked chunks + metadata\n+ [S1], [S2], … IDs", note:'This specialist makes no chat-model call. It uses a real local embedding model and exact cosine search.' },
+      tool: { title:'Tools', file:'app/agents.py', kicker:'04 / COMPUTE', x:730,y:230,w:210,h:100, description:'Uses retrieved facts and the question to select up to three permitted tool calls. Missing operands should lead to no call, not invented values.', code:'ToolAgent.run()\nllm.structured(..., ToolSelection)\nrun_tool(call)', callers:['orchestrator'], calls:['llm','tools','schemas'], output:"state['tools']\nactual arguments, reason,\nresult OR error", note:'Tool failures remain data for execution and review. No shell, arbitrary Python, or web tool is available.' },
+      execution: { title:'Execution', file:'app/agents.py', kicker:'05 / SYNTHESIZE', x:960,y:230,w:210,h:100, description:'Constructs context from the plan, passages, and actual tool outcomes; asks EURI to write a cited answer. Accepts critic feedback for one revision.', code:'ExecutionAgent.run()\nllm.complete(system, payload)', callers:['orchestrator'], calls:['llm'], output:"state['answer']\ncontext size + model/token usage", note:'If required retrieval is empty, the agent returns a clear limitation without calling the chat model.' },
+      reflection: { title:'Reflection', file:'app/agents.py', kicker:'06 / CRITIQUE', x:1190,y:230,w:210,h:100, description:'Checks the draft against evidence, tool results, and citation IDs. The orchestrator may invoke execution and reflection once more if it rejects.', code:'ReflectionAgent.run()\ncitation_issues()\nllm.structured(..., Critique)', callers:['orchestrator'], calls:['llm','schemas'], output:"state['critique']\napproved + issues + feedback", note:'Unknown source IDs force rejection even if the model approves. Empty-evidence abstention is accepted without a critic LLM call.' },
+      retriever: { title:'Ingestion + embeddings', file:'app/retrieval.py', kicker:'LOCAL EVIDENCE SERVICE', x:45,y:485,w:310,h:100, description:'Extracts PDF/TXT/MD text, creates overlapping chunks, deduplicates content, and generates normalized vectors. Search embeds the planned question with the same model.', code:'ingest() → extract_pages()\n→ chunk_pages() → encode()\nsearch() → encode(query=True)', callers:['api','retrieval'], calls:['store'], output:'page + offsets + text + vectors\nquery → ranked source passages', note:'Defaults: 900 characters per chunk, 150-character overlap, BGE-small embeddings. First use loads the model.' },
+      tools: { title:'Safe tool functions', file:'app/tools.py', kicker:'ALLOWLISTED OPERATIONS', x:405,y:485,w:290,h:100, description:'Validates exact argument names and executes deterministic arithmetic, an IANA-zone clock, or an ISO date difference.', code:'run_tool(call)\ncalculator → calculate(expression)\ncurrent_time / date_difference', callers:['tool'], calls:[], output:'{name, arguments, reason,\n ok, result OR error}', note:'The calculator parses an AST. No eval: length, node count, exponents and numeric magnitude are bounded.' },
+      llm: { title:'Gemini through EURI', file:'app/llm.py', kicker:'EXTERNAL MODEL ADAPTER', x:745,y:485,w:305,h:100, description:'Makes live requests using the OpenAI-compatible EURI endpoint. Agent decisions are parsed and validated against Pydantic schemas.', code:'structured() → complete()\nAsyncOpenAI.chat.completions\n→ api.euron.one/.../euri', callers:['supervisor','planning','tool','execution','reflection','api'], calls:['schemas'], output:'text or validated decision\nreported model + token usage', note:'No offline answer fallback. One JSON format repair is allowed; provider retries and timeouts are bounded.' },
+      store: { title:'SQLite vector + state store', file:'app/store.py', kicker:'PERSISTENT DATA', x:1100,y:485,w:300,h:100, description:'Stores documents, float32 vector BLOBs, conversation turns, runs, and events. NumPy performs exact cosine ranking over filtered chunks.', code:'insert_document() / search()\nhistory() / save_turn()\nevent() / events() / get_run()', callers:['api','orchestrator','retriever'], calls:[], output:'data/classroom.db\ndocuments + chunks + sessions\n+ messages + runs + events', note:'A new chat changes conversation context, not the shared document library. Source IDs are local to each run.' },
+      config: { title:'Settings', file:'app/config.py', kicker:'INITIALIZATION', x:45,y:675,w:310,h:85, description:'Reads environment variables and .env; validates limits and chunk overlap. The key is a SecretStr and is never sent to the browser.', code:'Settings()\nvalid_overlap() / configured', callers:['api'], calls:[], output:'provider + embedding settings\ndata path + resource limits', note:'configured means a nonblank key exists. Only a real provider request verifies access.' },
+      schemas: { title:'Typed contracts', file:'app/schemas.py', kicker:'INPUT / OUTPUT VALIDATION', x:405,y:675,w:290,h:85, description:'Defines request and agent-response models. Extra fields are rejected and tool names are allowlisted.', code:'StrictModel → extra fields forbidden\nQueryRequest / Route / Plan\nToolCall / ToolSelection / Critique', callers:['api','llm'], calls:[], output:'validated Pydantic objects\nor explicit validation errors', note:'Validation constrains shape and limits; the critic still needs to assess whether claims are supported.' },
+      telemetry: { title:'Trace → SSE → browser', file:'orchestrator.py → store.py → main.py', kicker:'OBSERVABILITY', x:745,y:675,w:655,h:85, description:'The orchestrator persists stage events. The API reads those events and streams them with replay cursors. The UI renders the real event payloads.', code:'emit() → Store.event()\nmain.events() → Store.events()\nEventSource → addEvent()', callers:['orchestrator'], calls:['store','api','browser'], output:'agent + reason + timing\npassages + tools + model usage', note:'Live highlighting tracks actual stage events. Service nodes explain code dependencies; they are not separate measured spans.' }
+    };
+    const EXTRA = {
+      tests:{title:'Automated checks',file:'tests/',description:'Isolated component and integration tests. Test doubles are dependency-injected only here; production never imports them.',code:'test_api.py / test_orchestration.py\ntest_retrieval.py / test_tools.py\ntest_provider.py / conftest.py',callers:[],calls:['api','orchestrator','retriever','tools','llm'],output:'pytest outcomes',note:'Deterministic tests do not prove live EURI answer quality.'},
+      evaluate:{title:'Live query evaluation',file:'scripts/evaluate.py',description:'Uploads teaching documents and runs the 36 categorized cases through the actual app. Preserves follow-up conversations and writes full results.',code:'evaluation/queries.json\ncheck_result(case, run)\nwrite_report(path, report)',callers:[],calls:['api'],output:'reports/live-results.json + .md',note:'Requires a running app, a working EURI key and sufficient quota. Preflight failures are recorded as blocked.'},
+      preflight:{title:'Preflight',file:'scripts/preflight.py',description:'Checks configuration, optionally warms actual embeddings, and optionally verifies provider access without displaying credentials.',code:'--warm-embeddings\n--check-provider',callers:[],calls:['config','retriever','llm'],output:'readiness output + exit status',note:'Use before class so the model download is complete before students arrive.'},
+      deploy:{title:'Startup and deployment',file:'Makefile / Dockerfile / compose.yaml',description:'Runs one Uvicorn worker with a persistent data volume. Python dependencies are specified in pyproject.toml and frozen in uv.lock.',code:'make run / make lint / make test\ndocker compose up --build',callers:[],calls:['api'],output:'local FastAPI service on port 8000',note:'The classroom app has no authentication. These files do not introduce AWS services or a distributed queue.'}
+    };
+    const EDGES = [
+      ['browser','api','M275 95H350'],['api','orchestrator','M590 95H680'],['orchestrator','supervisor','M825 140V189H145V230'],
+      ['supervisor','planning','M250 280H270'],['planning','retrieval','M480 280H500'],['retrieval','tool','M710 280H730'],['tool','execution','M940 280H960'],['execution','reflection','M1170 280H1190'],
+      ['reflection','final','M1295 230V140'],['reflection','execution','M1295 330V387H1065V330','return'],
+      ['retrieval','retriever','M605 330V424H200V485'],['tool','tools','M835 330V450H550V485'],['execution','llm','M1065 330V425H898V485'],
+      ['api','retriever','M350 114H20V535H45'],['retriever','store','M200 585V633H1250V585'],['orchestrator','store','M970 113H1420V535H1400'],
+      ['store','telemetry','M1250 585V675'],['api','config','M470 140V171H12V718H45']
+    ];
+    const step = (node,title,detail,code,from=null,kind='normal') => ({node,title,detail,code,from,kind});
+    const SCHEMA = {
+      StrictModel:{description:'Base class for every contract below. Inherits Pydantic BaseModel and rejects unexpected fields.', fields:{model_config:'ConfigDict(extra="forbid")'},use:'Inherited by QueryRequest, Route, Plan, ToolCall, ToolSelection and Critique. Validation checks structure, not factual accuracy.'},
+      QueryRequest:{description:'The HTTP request validated before a run is admitted.',fields:{query:'str · required · 1–4000 characters',session_id:'str · required · exactly 32 lowercase hexadecimal characters',top_k:'int · default 4 · range 1–8',document_ids:'list[str] · default [] · at most 50 entries'},use:'main.query(request) → Orchestrator.run(): request.model_dump() initializes query, session_id, top_k and document_ids.'},
+      Route:{description:'The supervisor’s validated routing decision.',fields:{intent:'Literal: direct | document | tool | multi_step | follow_up',needs_retrieval:'bool · required',needs_tools:'bool · required',standalone_query:'str · required · 1–4000 characters',reason:'str · required · at most 600 characters'},use:'SupervisorAgent → route.model_dump() → state[route]. An explicit document selection forces needs_retrieval=true. Planning, retrieval, tools and execution consume this decision.'},
+      Plan:{description:'The planner’s validated instructions and retrieval query.',fields:{steps:'list[str] · required · 1–6 steps',retrieval_query:'str · required · at most 4000 characters',success_criteria:'str · required · at most 1000 characters'},use:'PlanningAgent → plan.model_dump() → state[plan]. Retrieval uses retrieval_query, falling back to route.standalone_query if empty.'},
+      ToolCall:{description:'One nested tool request; the tool function checks its exact arguments.',fields:{name:'Literal: calculator | current_time | date_difference',arguments:'dict[str, str] · default {} · argument values are strings',reason:'str · required · at most 600 characters'},use:'ToolSelection.calls contains ToolCall objects. run_tool(call) returns name, arguments, reason, ok, and result or error. The resulting dictionaries go into state[tools].'},
+      ToolSelection:{description:'The validated list of tool calls proposed by the model.',fields:{calls:'list[ToolCall] · default [] · at most 3 calls',reason:'str · required · at most 600 characters'},use:'ToolAgent validates ToolSelection, executes its calls, and saves results in state[tools]. ToolSelection itself is not stored in shared state.'},
+      Critique:{description:'The critic’s verdict and feedback for a possible revision.',fields:{approved:'bool · required',issues:'list[str] · default [] · at most 6 issues at validation',feedback:'str · required · at most 2000 characters'},use:'ReflectionAgent → critique.model_dump() → state[critique]. Citation checks can override approval and append issues after validation. Empty-evidence abstention uses a deterministic dictionary. A rejection creates state[feedback] and permits one revision.'}
+    };
+    const CONTRACT = {
+      browser:{schemas:['QueryRequest'],reads:'User question, session, Top-K and document selection.',writes:'Build the HTTP request; no agent state exists yet.'},
+      api:{schemas:['QueryRequest'],reads:'HTTP body → QueryRequest.',writes:'Validate before scheduling; malformed requests do not enter the pipeline.'},
+      orchestrator:{schemas:['QueryRequest'],reads:'request.model_dump(), Store.history(session_id), Store.documents().',writes:'Initialize query, session_id, top_k, document_ids, history and documents.'},
+      supervisor:{schemas:['Route'],reads:'query, history, documents, document_ids.',writes:'state[route] = route.model_dump().'},
+      planning:{schemas:['Plan'],reads:'query, route.',writes:'state[plan] = plan.model_dump().'},
+      retrieval:{schemas:[],reads:'route, plan, top_k, document_ids.',writes:'state[sources] = retriever.search(...), or [] when skipped.'},
+      tool:{schemas:['ToolSelection','ToolCall'],reads:'route.standalone_query, route.needs_tools, sources, plan.',writes:'Initialize state[tools] = []; replace with actual tool results when calls finish.'},
+      execution:{schemas:[],reads:'route, plan, sources, tools, optional feedback.',writes:'state[answer] = generated text, or a deterministic limitation if required evidence is empty.'},
+      reflection:{schemas:['Critique'],reads:'answer, route, sources, tools; deterministic citation checks.',writes:'state[critique] = verdict after citation checks.'},
+      revision:{schemas:['Critique'],reads:'answer and rejected critique.',writes:'state[feedback] = {draft: state[answer], critique: state[critique]}; execution and reflection overwrite answer and critique once.'},
+      final:{schemas:[],reads:'answer, sources, tools, route, plan, critique.',writes:'Build and persist a separate result. A refused result.answer does not overwrite the draft in state[answer].'},
+      upload:{schemas:[],reads:'Multipart file → extracted pages → chunks → embeddings.',writes:'Persist document metadata and vectors. Upload does not create a QueryRequest or the six-agent state dictionary.'},
+      telemetry:{schemas:[],reads:'Persisted events and final result.',writes:'Send SSE events to the browser; no agent state mutation.'}
+    };
+    let stateFrames=[], stateValues={}, stateCursor=null, stateOrigin='CODE GUIDE';
+    const copyState = value => JSON.parse(JSON.stringify(value));
+    const pickFields = (value,keys) => Object.fromEntries(keys.filter(key=>Object.hasOwn(value,key)).map(key=>[key,value[key]]));
+    function stateFrame(stage,label,patch={},note='') {
+      const before={...stateValues},savedPatch=copyState(patch);stateValues={...stateValues,...savedPatch};
+      stateFrames.push({stage,label,before,after:{...stateValues},patch:savedPatch,note});
+    }
+    function resetState(origin='SERVER TRACE') { stateFrames=[];stateValues={};stateCursor=null;stateOrigin=origin;renderState(); }
+    function schemaView(name) {
+      const data=SCHEMA[name];
+      $('schema-title').textContent=`${name}${name==='StrictModel'?' extends BaseModel':' extends StrictModel'} · app/schemas.py`;
+      $('schema-description').textContent=data.description;$('schema-use').textContent=data.use;$('schema-fields').replaceChildren();
+      for(const [key,value] of Object.entries(data.fields)){const row=element('tr');row.append(element('th','',key),element('td','',value));row.firstChild.scope='row';$('schema-fields').append(row);}
+      for(const button of $('schema-buttons').children)button.setAttribute('aria-pressed',String(button.dataset.schema===name));
+    }
+    function renderState() {
+      const position=stateCursor===null?stateFrames.length-1:Math.min(stateCursor,stateFrames.length-1),item=stateFrames[position];
+      const contract=CONTRACT[item?.stage]||{schemas:[],reads:'See the selected source component.',writes:'No shared-state write at this step.'};
+      $('state-origin').textContent=stateOrigin;
+      $('state-stage').textContent=item?`${position+1}. ${item.label}`:'Choose a step or start a live run.';
+      $('state-contract').textContent=`Contracts: ${contract.schemas.join(' → ')||'Plain dictionaries / text; no schema class at this step.'} Reads: ${contract.reads} Writes: ${contract.writes}`;
+      $('state-provenance').textContent=(stateOrigin==='CODE GUIDE'?'Illustrative values and <placeholders> explain the code; they are not generated answers. ':stateOrigin==='IMPORTED TRACE'?'Values reconstructed from the imported file; not an authenticated server snapshot. ':'Values reconstructed from this request and server events. ')+(item?.note||'')+(stateOrigin!=='CODE GUIDE'?' Only known fields are shown. History and the document inventory are not exposed in traces.':'');
+      const changes=Object.entries(item?.patch||{}).map(([key,value])=>`state[${JSON.stringify(key)}]\n  BEFORE: ${Object.hasOwn(item.before,key)?JSON.stringify(item.before[key],null,2):'(not yet set / not observed)'}\n  AFTER:  ${JSON.stringify(value,null,2)}`);
+      $('state-diff').textContent=changes.join('\n\n')||'No observed state write at this step.';
+      $('state-snapshot').textContent=JSON.stringify(item?.after||{},null,2);
+      $('state-latest').hidden=mode!=='live'||stateCursor===null;
+      $('state-history').replaceChildren();
+      stateFrames.forEach((entry,i)=>{const button=element('button','button small',`${i+1} · ${entry.label}`);button.setAttribute('aria-pressed',String(i===position));button.onclick=()=>{if(mode==='guide'){pause();showStep(i);}else{stateCursor=i;renderState();}};$('state-history').append(button);});
+      for(const button of $('schema-buttons').children)button.classList.toggle('relevant',contract.schemas.includes(button.dataset.schema));
+      if(contract.schemas.length)schemaView(contract.schemas[0]);
+    }
+    function seedRuntimeState(request) {
+      const patch=pickFields(request,['query','session_id','top_k','document_ids']);
+      if(Object.keys(patch).length)stateFrame('orchestrator','Request fields available',patch,'Request fields initialize state when the queued run begins; this is not an initialization event.');
+      renderState();
+    }
+    function observeState(event) {
+      const d=event.details||{},stage=event.status==='revision'?'revision':event.agent;let patch={};
+      let note='';
+      if(event.status==='completed'){
+        if(event.agent==='supervisor')patch={route:pickFields(d,Object.keys(SCHEMA.Route.fields))};
+        if(event.agent==='planning')patch={plan:pickFields(d,Object.keys(SCHEMA.Plan.fields))};
+        if(event.agent==='retrieval'&&Array.isArray(d.sources))patch={sources:d.sources};
+        if(event.agent==='tool'&&Array.isArray(d.results))patch={tools:d.results};
+        if(event.agent==='execution'&&typeof d.answer==='string')patch={answer:d.answer};
+        if(event.agent==='reflection')patch={critique:pickFields(d,Object.keys(SCHEMA.Critique.fields))};
+        for(const key of ['route','plan','critique'])if(patch[key]&&!Object.keys(patch[key]).length)delete patch[key];
+      }
+      if(event.status==='skipped'&&event.agent==='retrieval')patch={sources:[]};
+      if(event.status==='skipped'&&event.agent==='tool')patch={tools:[]};
+      if(event.status==='revision'){
+        if(Object.hasOwn(stateValues,'answer')&&Object.hasOwn(stateValues,'critique'))patch={feedback:{draft:stateValues.answer,critique:stateValues.critique}};
+        note='The revision event announces the next orchestrator write. Feedback is reconstructed from the preceding draft and critique; it is not included in the event payload.';
+      }
+      if(event.status==='running')note='Stage started; completion values have not arrived.';
+      if(event.status==='failed')note='Stage failed. Internal partial writes are not exposed; retain the last observed values.';
+      if(event.agent==='final')note='The persisted response is separate from this shared-state draft. save_turn() appends conversation history in SQLite; this run’s loaded history stays unchanged. See the final answer above.';
+      stateFrame(stage,`${event.agent} / ${event.status}`,patch,note);renderState();
+    }
+    function guideState(steps,idx) {
+      stateFrames=[];stateValues={};stateCursor=null;stateOrigin='CODE GUIDE';
+      const retrieve=!['direct','tool'].includes(scenario),useTools=['multi','tool','follow','revision'].includes(scenario),empty=scenario==='empty';
+      let executions=0,reflections=0;
+      for(let i=0;i<=idx;i++){
+        const item=steps[i];let stage=item.node,patch={},note='';
+        if(scenario==='upload'){stage='upload';note='This flow updates the persistent library, not the per-question state.';}
+        else if(stage==='orchestrator'&&item.kind==='revision'){stage='revision';patch={feedback:{draft:stateValues.answer,critique:stateValues.critique}};}
+        else if(stage==='orchestrator')patch={query:typedQuestion||ASK[scenario].q,session_id:'<current conversation ID>',top_k:4,document_ids:[],history:scenario==='follow'?'<prior conversation loaded from Store.history()>': '<conversation history loaded from Store.history()>',documents:'<current document IDs and names from Store.documents()>'};
+        else if(stage==='supervisor')patch={route:{intent:scenario==='follow'?'follow_up':retrieve?(useTools?'multi_step':'document'):(useTools?'tool':'direct'),needs_retrieval:retrieve,needs_tools:useTools,standalone_query:scenario==='follow'?'<standalone question resolved from history>':typedQuestion||ASK[scenario].q,reason:'<validated routing explanation>'}};
+        else if(stage==='planning')patch={plan:{steps:['<1–6 validated plan steps>'],retrieval_query:retrieve?'<planned search query>':'',success_criteria:'<validated success criteria>'}};
+        else if(stage==='retrieval'){if(!retrieve)patch={sources:[]};else note='Retrieval is pending. Sources are assigned after search returns.';}
+        else if(stage==='retriever')stage='retrieval';
+        else if(stage==='store'){stage='retrieval';patch={sources:empty?[]:['<ranked passage with citation, text, score and metadata>']};}
+        else if(stage==='tool'){patch={tools:[]};note=useTools?'ToolSelection contains ToolCall objects; actual results arrive after execution.':'Skipped tools still write an empty list.';}
+        else if(stage==='tools'){stage='tool';patch={tools:['<actual run_tool result: name, arguments, reason, ok, result OR error>']};}
+        else if(stage==='execution'){executions++;if(empty)patch={answer:'<fixed missing-evidence limitation from ExecutionAgent>'};else if(executions>1)patch={answer:'<revised draft using feedback>'};else note='Context is built; the draft is assigned after the EURI call returns.';}
+        else if(stage==='llm'){stage='execution';patch={answer:'<generated draft from the real provider at runtime>'};}
+        else if(stage==='reflection'){reflections++;patch={critique:{approved:scenario==='revision'&&reflections===1?false:true,issues:scenario==='revision'&&reflections===1?['<issue identified by critic>']:[],feedback:empty?'Correctly abstained with no evidence.':'<critic feedback>'}};if(scenario==='revision'&&reflections>1)note='This example shows approval after revision. A second rejection produces needs_review and withholds the draft.';}
+        stateFrame(stage,item.title,patch,note);
+      }
+      renderState();
+    }
+    const ENTRY = [step('browser','Submit the question','The classroom JavaScript sends the current question, session ID, Top-K and document selection.','POST /api/runs'),step('api','Validate the request','FastAPI validates QueryRequest, checks key presence and verifies session/document IDs.','main.query(request)','browser'),step('orchestrator','Schedule one run','start() saves a queued record and schedules run(). The browser receives HTTP 202 and a run ID.','start() → run() → Store.history()','api')];
+    function querySteps({retrieve=true,tools=true,follow=false,empty=false,revise=false}={}) {
+      const steps = [...ENTRY,step('supervisor',follow?'Resolve the follow-up':'Route the question',follow?'Use previous conversation turns to rewrite the reference into a standalone query.':'The model chooses intent and whether retrieval and computation are necessary.',"LLM.structured(..., Route) → state['route']",'orchestrator'),step('planning','Create the plan','Produce concrete steps, a search query and success criteria. The orchestrator still controls execution order.',"LLM.structured(..., Plan) → state['plan']",'supervisor'),step('retrieval',retrieve?'Request document evidence':'Skip document retrieval',retrieve?'Pass the planned query, Top-K and document scope to the local retrieval service.':'Record an explicit skipped stage because the route does not require documents.',"RetrievalAgent.run() → state['sources']",'planning',retrieve?'normal':'skipped')];
+      if(retrieve) steps.push(step('retriever','Embed the search query','Use the same local embedding model as the stored document chunks. The embedding is normalized before ranking.','Retriever.search() → Embedder.encode(query=True)','retrieval'),step('store',empty?'No supporting passages':'Select Top-K passages',empty?'The search returns no passages that satisfy the scope and threshold. Similarity does not guarantee evidence.':'Filter stored chunks by model/document, rank cosine scores, then retain Top-K above the threshold.','Store.search() → passages + metadata + citation IDs','retriever'));
+      steps.push(step('tool',tools?'Select a tool':'Skip tool execution',tools?'The LLM chooses allowed calls and evidence-supported arguments; it does not execute arbitrary code.':'This route does not need arithmetic, the clock, or date differences.',"ToolAgent.run() → state['tools']",'retrieval',tools?'normal':'skipped'));
+      if(tools) steps.push(step('tools','Execute the allowed function','run_tool() validates arguments and returns an actual result or an explicit tool error. This walkthrough does not execute a tool.','run_tool(ToolCall) → {ok, result OR error}','tool'));
+      steps.push(step('execution',empty?'Abstain without evidence':'Generate a grounded draft',empty?'Required retrieval is empty: return a clear limitation without calling the LLM.':'Construct the context from the plan, passages and tool results; request a source-cited answer.',empty?"state['answer'] = evidence limitation":"LLM.complete(...) → state['answer']",'tool'));
+      if(!empty) steps.push(step('llm','Call EURI','The production code sends role instructions and JSON context to the configured Gemini model through the EURI gateway. No provider call occurs in guided mode.','AsyncOpenAI.chat.completions.create(...)','execution'));
+      steps.push(step('reflection',empty?'Approve the honest limitation':'Check grounding and tool use',empty?'The known empty-evidence abstention is approved directly, without a critic model call.':'Check source IDs deterministically and ask the critic to review claims, citations and actual tool outcomes.',"ReflectionAgent.run() → state['critique']",'execution'));
+      if(revise) steps.push(step('orchestrator','Save revision feedback','Copy the rejected draft and critique into feedback before invoking execution again.',"state['feedback'] = {draft: state['answer'], critique: state['critique']}",'reflection','revision'),step('execution','Apply one critic revision','If the first critique rejects, the orchestrator passes the draft and feedback back to execution. This is a possible branch, not a claim that all runs revise.','state[feedback] → ExecutionAgent.run()','reflection'),step('reflection','Review the revision','The critic reviews once more. A second rejection produces needs_review and a safe refusal; there is no unbounded loop.','ReflectionAgent.run() → final verdict','execution'));
+      steps.push(step('final','Persist the reviewed response','Save the final turn and result. An approved draft is returned; a still-rejected draft is withheld. No generated answer is fabricated in this walkthrough.','Store.save_turn() + Store.update_run()','reflection'),step('telemetry','Deliver the real event stream','At runtime, stored trace events and the terminal result are streamed to the UI. The browser maps citations to the retrieved source cards.','Store.events() → main.events() → app.js','store'));
+      return steps;
+    }
+    const SCENARIOS = {
+      multi:{label:'Multi-step',title:'Retrieve, compute, then review.',description:'A question needs both document facts and a calculated result.',steps:querySteps()},
+      direct:{label:'Direct question',title:'Explain a concept, directly.',description:'A general question still passes through all six stage contracts; retrieval and tools are marked skipped.',steps:querySteps({retrieve:false,tools:false})},
+      document:{label:'Document Q&A',title:'Follow the evidence.',description:'From a planned search query to actual source passages and a reviewed, cited answer.',steps:querySteps({tools:false})},
+      tool:{label:'Tool question',title:'Compute with an allowed tool.',description:'The model selects arguments; Python executes and validates the computation.',steps:querySteps({retrieve:false})},
+      follow:{label:'Follow-up',title:'Carry context into the next turn.',description:'History resolves references. Fresh retrieval supplies document evidence for the new question.',steps:querySteps({follow:true})},
+      upload:{label:'Upload document',title:'Turn a document into searchable evidence.',description:'Extraction, overlapping chunks, normalized embeddings and atomic persistence.',steps:[step('browser','Select a document','uploadFiles() sends file bytes as multipart FormData.','POST /api/documents'),step('api','Validate and offload','Enforce size/library limits and run blocking ingestion in a worker thread.','main.upload() → to_thread(retriever.ingest)','browser'),step('retriever','Extract page text','Decode UTF-8 TXT/MD or read text from PDF pages. Reject unsupported or unreadable content.','Retriever.ingest() → extract_pages()','api'),step('retriever','Create overlapping chunks','Keep page numbers and exact start/end offsets. Fingerprint content plus model/chunk configuration for deduplication.','chunk_pages(pages, size=900, overlap=150)'),step('retriever','Embed new content','A duplicate reuses existing metadata. New chunks receive real local normalized embeddings.','Embedder.encode(chunk_texts)'),step('store','Persist atomically','Save document metadata, chunks and float32 vectors in one SQLite transaction. Original file bytes are not retained.','Store.insert_document(doc, chunks, vectors)','retriever'),step('browser','Refresh the document library','Return metadata and the created flag. loadDocuments() refreshes the list; Inspect chunks reads stored text.','HTTP 201 → app.js loadDocuments()','api')]},
+      empty:{label:'Missing evidence',title:'No evidence? Say so.',description:'An empty retrieval result produces an explicit limitation, not invented document facts.',steps:querySteps({tools:false,empty:true})},
+      revision:{label:'Critic revision',title:'One revision, then a final verdict.',description:'A rejected draft revisits execution and reflection once. A second rejection is safely withheld.',steps:querySteps({revise:true})}
+    };
+    let mode='guide', scenario='multi', index=-1, playing=false, timer=null, frame=null, animationEpoch=0;
+    let speed=1, typedQuestion=null, calls=0, promptTokens=0, completionTokens=0, passages=0, toolCalls=0;
+    let source=null, activeRun=null, session=null, busy=false, lastRun=null, seen=new Set(), observed=[];
+    function element(tag,className,text) { const node=document.createElement(tag); if(className)node.className=className; if(text!==undefined)node.textContent=text; return node; }
+    function svgElement(tag,attrs={}) { const node=document.createElementNS(NS,tag); for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value); return node; }
+    function notify(message) { $('notice').textContent=message; $('notice').hidden=false; }
+    function hideNotice() { $('notice').hidden=true; }
+    function renderDiagram() {
+      for(const [from,to,d,kind] of EDGES) $('wires').append(svgElement('path',{id:`edge-${from}-${to}`,d,class:`wire ${kind||''}`}));
+      for(const [id,data] of Object.entries(NODE)) {
+        const group=svgElement('g',{id:`node-${id}`,class:'node',tabindex:'0',role:'button','aria-label':`Inspect ${data.title}: ${data.file}`});
+        group.append(svgElement('rect',{x:data.x,y:data.y,width:data.w,height:data.h,rx:12}));
+        for(const [offset,text,className] of [[23,data.kicker,'node-kicker'],[51,data.title,'node-title'],[75,id==='telemetry'?'Actual agent events, not token streaming':data.file,'node-file']]) { const label=svgElement('text',{x:data.x+16,y:data.y+offset,class:className}); label.textContent=text; group.append(label); }
+        group.addEventListener('click',()=>inspect(id)); group.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();inspect(id);}}); $('nodes').append(group);
+      }
+      const label=svgElement('text',{x:45,y:207,class:'svg-label'});label.textContent='AGENTS.PY / ORCHESTRATOR INVOKES EACH ROLE IN ORDER';$('nodes').append(label);
+      const support=svgElement('text',{x:45,y:466,class:'svg-label'});support.textContent='SUPPORT SERVICES / NOT ADDITIONAL AGENTS';$('nodes').append(support);
+      for(const [id,data] of Object.entries({...NODE,...EXTRA})) { const button=element('button','',`${data.file} · ${data.title}`);button.onclick=()=>inspect(id);$('file-grid').append(button); }
+    }
+    function selectTab(name) { for(const id of ['inspector','simulator','trace']) {$(`tab-${id}`).setAttribute('aria-selected',String(id===name));$(id).hidden=id!==name;} }
+    function inspect(id,openTab=true) {
+      const data=NODE[id]||EXTRA[id]; if(!data)return;
+      document.querySelectorAll('.node.selected').forEach(node=>node.classList.remove('selected'));$(`node-${id}`)?.classList.add('selected');
+      $('inspect-file').textContent=data.file; $('inspect-title').textContent=data.title; $('inspect-description').textContent=data.description; $('inspect-code').textContent=data.code; $('inspect-output').textContent=data.output; $('inspect-note').textContent=data.note;
+      for(const [field,values] of [['callers',data.callers],['callees',data.calls]]) { const target=$(`inspect-${field}`);target.replaceChildren();if(!values.length)target.append(element('p','hint',field==='callers'?'User action, startup, or development command.':'Returns to its caller; no additional application service.')); for(const key of values){const button=element('button','',`${NODE[key].title} → ${NODE[key].file}`);button.onclick=()=>inspect(key);target.append(button);} }
+      if(openTab){selectTab('inspector');const schema=CONTRACT[id]?.schemas[0];if(schema)schemaView(schema);if(id==='schemas'){$('schema-detail').open=true;$('state-panel').scrollIntoView({behavior:reducedMotion.matches?'instant':'smooth',block:'start'});}}
+    }
+    function stopMotion() { clearTimeout(timer);timer=null;cancelAnimationFrame(frame);frame=null;animationEpoch++;$('packet').hidden=true; }
+    function pause() { playing=false;stopMotion();$('play').textContent='▶ Play'; }
+    function clearHighlights() { document.querySelectorAll('.node').forEach(n=>n.classList.remove('active','visited','skipped','failed'));document.querySelectorAll('.wire').forEach(n=>n.classList.remove('active')); }
+    function animate(from,to) {
+      const path=$(`edge-${from}-${to}`); if(!path)return;path.classList.add('active');
+      if(reducedMotion.matches)return;
+      const token=++animationEpoch,start=performance.now(),length=path.getTotalLength(),duration=750/speed;$('packet').hidden=false;
+      function move(now){if(token!==animationEpoch)return;const progress=Math.min((now-start)/duration,1),point=path.getPointAtLength(progress*length);$('packet').setAttribute('cx',point.x);$('packet').setAttribute('cy',point.y);if(progress<1)frame=requestAnimationFrame(move);else $('packet').hidden=true;}
+      frame=requestAnimationFrame(move);
+    }
+    function addLog(title,details){const row=element('details','log-entry');row.append(element('summary','',title),element('pre','',typeof details==='string'?details:JSON.stringify(details,null,2)));$('trace-log').append(row);$('trace-log').scrollTop=$('trace-log').scrollHeight;}
+    function updatePlayback() { const steps=SCENARIOS[scenario].steps; $('previous').disabled=index<0;$('next').disabled=index>=steps.length-1;const progress=Math.max(0,(index+1)/steps.length*100);$('progress-bar').style.width=`${progress}%`;document.querySelector('.progress').setAttribute('aria-valuenow',String(Math.round(progress))); }
+    function showStep(nextIndex) {
+      stopMotion();const steps=SCENARIOS[scenario].steps;index=Math.max(-1,Math.min(nextIndex,steps.length-1));clearHighlights();$('trace-log').replaceChildren();
+      for(let i=0;i<=index;i++){const item=steps[i],node=$(`node-${item.node}`);node.classList.add(item.kind==='skipped'?'skipped':'visited');addLog(`GUIDE ${String(i+1).padStart(2,'0')} · ${item.title}`,`${item.detail}\n\n${item.code}`);}
+      document.querySelectorAll('.timeline button').forEach((button,i)=>button.setAttribute('aria-current',i===index?'step':'false'));
+      if(index>=0){const item=steps[index];$(`node-${item.node}`).classList.add('active');$('step-number').textContent=`${index+1} / ${steps.length}`;$('step-title').textContent=item.title;$('step-detail').textContent=item.detail;inspect(item.node,false);if(item.from)animate(item.from,item.node);}
+      else{$('step-number').textContent='READY';$('step-title').textContent='Choose a scenario and press Play.';$('step-detail').textContent='Click any component to inspect its source file, callers, and outputs. Guided playback never calls the model.';}
+      $('metric-one').textContent=String(index+1);
+      if(mode==='guide'){renderGuideChat(steps,index);renderGuideTerminal(steps,index);guideState(steps,index);}
+      updatePlayback();
+    }
+    function chooseScenario(key) {
+      pause();scenario=key;const data=SCENARIOS[key];$('scenario-title').textContent=data.title;$('scenario-description').textContent=data.description;$('timeline').replaceChildren();$('sources').replaceChildren();
+      document.querySelectorAll('.scenario').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scenario===key)));
+      data.steps.forEach((item,i)=>{const button=element('button','',`${String(i+1).padStart(2,'0')} ${item.title}`);button.onclick=()=>{pause();showStep(i);};$('timeline').append(button);});showStep(-1);
+    }
+    function tick(){if(!playing)return;if(index>=SCENARIOS[scenario].steps.length-1){pause();return;}showStep(index+1);timer=setTimeout(tick,1900/speed);}
+    function setMode(next) {
+      if(busy){notify('Detach or wait for this run before switching modes. Detach does not cancel the server run.');return;}
+      pause();mode=next;hideNotice();clearHighlights();$('mode-guide').setAttribute('aria-selected',String(next==='guide'));$('mode-live').setAttribute('aria-selected',String(next==='live'));$('guide-toolbar').hidden=next!=='guide';$('live-panel').hidden=next!=='live';$('timeline').hidden=next!=='guide';document.querySelector('.progress').hidden=next!=='guide';
+      $('mode-badge').textContent=next==='guide'?'GUIDED WALKTHROUGH':'LIVE / SAVED TRACE';$('mode-badge').classList.toggle('live',next==='live');$('mode-note').textContent=next==='guide'?'Illustrative code paths. No API requests or generated answers.':'Only server events or imported trace data appear as runtime results.';
+      $('metric-one-label').textContent=next==='guide'?'WALKTHROUGH STEPS':'OBSERVED EVENTS';$('metric-two-label').textContent=next==='guide'?'DATA SOURCE':'RUN STATUS';$('metric-two').textContent=next==='guide'?'CODE GUIDE':'NOT CONNECTED';$('metric-one').textContent='0';
+      $('trace-caption').textContent=next==='guide'?'These entries explain a possible code path. They are not measured runtime logs.':'Durations, passages, and decisions come from the trace. Only stage events are instrumented; service connections illustrate dependencies.';
+      renderChips();$('sim-input').placeholder=next==='guide'?'Type a question to find its traced code path…':'Ask the running app a real question…';
+      if(next==='guide'){typedQuestion=null;setMetrics(true);clearTerminal('Guided walkthrough loaded. Nothing here is measured.');chooseScenario(scenario);}else{resetRuntime();resetChat('Live mode. Ask a question here or in the panel on the left — the answer below is the one the run actually produced.');term('system','Waiting for a real run, an attached run ID, or an imported trace.','t-info');$('scenario-title').textContent='Architecture, driven by actual events.';$('scenario-description').textContent='Run a real question, attach a run ID, or import the classroom app’s JSON export.';$('step-number').textContent='WAITING';$('step-title').textContent='No runtime events loaded.';$('step-detail').textContent='Open this page through /architecture for same-origin API access. Imported JSON works offline.';selectTab('trace');}
+    }
+    function sameOrigin(){if(!['http:','https:'].includes(location.protocol))throw new Error('For live mode, open http://127.0.0.1:8000/architecture after starting the FastAPI app. Offline walkthroughs and trace import work in this file.');}
+    async function api(path,options={}){sameOrigin();const response=await fetch(path,{...options,signal:AbortSignal.timeout(120000)});let data;try{data=await response.json();}catch{throw new Error('This origin is not serving the Relay API. Open the page through the FastAPI /architecture route.');}if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:`HTTP ${response.status}: ${JSON.stringify(data.detail||data)}`);return data;}
+    const post=data=>({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    function setBusy(value){busy=value;for(const id of ['live-send','attach','new-session','import','connect','mode-guide','mode-live'])$(id).disabled=value;$('live-query').disabled=value;$('detach').disabled=!value;}
+    function resetRuntime(){resetState();stopMotion();clearHighlights();seen=new Set();observed=[];lastRun=null;$('trace-log').replaceChildren();$('sources').replaceChildren();$('answer').hidden=true;$('answer').textContent='';$('export').disabled=true;$('metric-one').textContent='0';calls=promptTokens=completionTokens=passages=toolCalls=0;setMetrics(false);clearTerminal();resetChat();}
+    function displaySources(sources){$('sources').replaceChildren();for(const item of sources||[]){const card=element('details','source');card.append(element('summary','',`[${item.citation||'?'}] ${item.name||'Source'} · page ${item.page??'?'} · score ${item.score??'—'}`),element('p','',String(item.text||'')));$('sources').append(card);}}
+    function runtimeEvent(event){
+      const key=String(event.id??JSON.stringify(event));if(seen.has(key))return;seen.add(key);observed.push(event);$('metric-one').textContent=String(observed.length);
+      const id=event.agent==='final'?'final':event.agent;const node=$(`node-${id}`);
+      if(node){document.querySelectorAll('.node.active').forEach(n=>n.classList.remove('active'));node.classList.add(event.status==='failed'?'failed':event.status==='skipped'?'skipped':'visited');if(event.status==='running')node.classList.add('active');inspect(id,false);if(event.status==='running'){const order=['supervisor','planning','retrieval','tool','execution','reflection'];let previous=order.indexOf(id)-1;const pastRunning=observed.slice(0,-1).filter(e=>e.status==='running').at(-1)?.agent;if(pastRunning==='reflection'&&id==='execution')animate('reflection','execution');else animate(previous>=0?order[previous]:'orchestrator',id);}}
+      recordTelemetry(event);observeState(event);
+      const duration=event.duration_ms!==undefined?` · ${event.duration_ms} ms`:'';addLog(`${event.timestamp||'Imported event'} · ${event.agent} · ${event.status}${duration}`,event.details||{reason:event.reason||''});
+      $('step-number').textContent='EVENT';$('step-title').textContent=`${event.agent} / ${event.status}`;$('step-detail').textContent=event.details?.reason||event.reason||'Expand this event in the trace panel to inspect the actual payload.';
+      if(event.details?.sources)displaySources(event.details.sources);
+    }
+    function validateRun(run){if(!run||typeof run!=='object'||!Array.isArray(run.events)||!run.events.length)throw new Error('Expected a Relay run export containing a non-empty events array.');if(run.events.length>2000)throw new Error('Trace exceeds 2,000 events.');for(const event of run.events){if(!event||typeof event!=='object'||typeof event.agent!=='string'||typeof event.status!=='string')throw new Error('Each trace event must have string agent and status fields.');}if(run.result!=null&&(typeof run.result!=='object'||Array.isArray(run.result)))throw new Error('Run result must be an object.');if(run.result?.sources!==undefined&&!Array.isArray(run.result.sources))throw new Error('Run sources must be an array.');return run;}
+    function showResult(run,imported=false){stateOrigin=imported?'IMPORTED TRACE':'SERVER TRACE';if(!stateFrames.length)seedRuntimeState(run);lastRun=run;$('export').disabled=false;for(const event of run.events||[])runtimeEvent(event);renderState();renderRunChat(run,imported);$('metric-two').textContent=(run.status||'UNKNOWN').toUpperCase();$('mode-badge').textContent=imported?'IMPORTED TRACE':'SERVER TRACE';$('trace-caption').textContent=imported?'Imported file contents, not an authenticated live connection. Stage events and evidence below are reproduced from that file.':'These are persisted events returned by the running Relay API. Service connections illustrate code dependencies.';displaySources(run.result?.sources||[]);const answer=run.result?.answer||run.result?.error;if(answer){$('answer').textContent=String(answer);$('answer').hidden=false;}if(!['queued','running'].includes(run.status)){$('step-number').textContent='FINISHED';$('step-title').textContent=`Run ${run.status||'loaded'}`;$('step-detail').textContent=run.result?.duration_ms!==undefined?`Server-reported total duration: ${run.result.duration_ms} ms. Inspect the trace for measured stage timing.`:'Inspect the recorded events and final result. No latency or token metrics have been invented.';} }
+    function detach(){source?.close();source=null;activeRun=null;setBusy(false);stopMotion();}
+    function watch(id){
+      source?.close();activeRun=id;setBusy(true);$('run-id').value=id;$('metric-two').textContent='CONNECTING';$('mode-badge').textContent='SERVER TRACE';source=new EventSource(`/api/runs/${id}/events`);const watching=source;
+      source.addEventListener('trace',event=>{if(source!==watching)return;try{runtimeEvent(JSON.parse(event.data));$('metric-two').textContent='RUNNING';}catch(error){notify(`Invalid event: ${error.message}`);}});
+      source.addEventListener('done',event=>{if(source!==watching)return;try{const run=JSON.parse(event.data);detach();showResult(run);}catch(error){detach();notify(error.message);}});
+      source.onerror=async()=>{if(source!==watching)return;$('connection-status').textContent='Event connection interrupted; reconnecting…';try{const run=await api(`/api/runs/${id}`);if(source!==watching)return;for(const event of run.events||[])runtimeEvent(event);if(!['queued','running'].includes(run.status)){detach();showResult(run);}}catch(error){if(source===watching)notify(`${error.message} You can detach and reconnect using the same run ID.`);}};
+    }
+    $('connect').onclick=async()=>{hideNotice();$('connect').disabled=true;try{const health=await api('/api/health');$('connection-status').textContent=`Server reachable · ${health.model} · ${health.documents} documents · ${health.configured?'key configured; access not yet verified':'EURI_API_KEY missing'}`;$('metric-two').textContent='SERVER REACHABLE';}catch(error){notify(error.message);}finally{$('connect').disabled=busy;}};
+    $('live-form').onsubmit=async event=>{event.preventDefault();if(busy)return;const query=$('live-query').value.trim();if(!query){notify('Enter a question first.');return;}hideNotice();try{sameOrigin();setBusy(true);if(!session)session=(await api('/api/sessions',{method:'POST'})).id;const request={query,session_id:session,top_k:Number($('live-k').value),document_ids:[]};const run=await api('/api/runs',post(request));resetRuntime();seedRuntimeState(request);$('scenario-title').textContent=query;$('scenario-description').textContent='Actual server run. The same conversation is used until you choose New session.';$('connection-status').textContent=`Run accepted: ${run.id}`;selectTab('trace');watch(run.id);}catch(error){setBusy(false);notify(error.message);}};
+    $('attach').onclick=async()=>{if(busy)return;const id=$('run-id').value.trim();if(!/^[a-f0-9]{32}$/.test(id)){notify('Enter a valid 32-character lowercase hexadecimal run ID.');return;}hideNotice();setBusy(true);try{const run=await api(`/api/runs/${id}`);resetRuntime();seedRuntimeState(run);$('scenario-title').textContent=run.query||'Attached run';for(const event of run.events||[])runtimeEvent(event);if(['queued','running'].includes(run.status))watch(id);else{setBusy(false);showResult(run);}}catch(error){setBusy(false);notify(error.message);}};
+    $('detach').onclick=()=>{const id=activeRun;detach();$('metric-two').textContent='DETACHED';notify(`Detached from ${id}. The server run continues; use Attach run to reconnect.`);};
+    $('new-session').onclick=()=>{session=null;notify('The next question will use a new conversation. Existing history and documents are preserved.');};
+    $('import').onclick=()=>$('trace-file').click();
+    $('trace-file').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>5*1024*1024)throw new Error('Trace imports are limited to 5 MB.');const run=validateRun(JSON.parse(await file.text()));resetRuntime();$('scenario-title').textContent=typeof run.query==='string'?run.query:'Imported trace';$('scenario-description').textContent='Inspecting an exported run; no request was sent to EURI.';showResult(run,true);selectTab('trace');hideNotice();}catch(error){notify(`Could not import trace: ${error.message}`);}finally{event.target.value='';}};
+    $('export').onclick=()=>{if(!lastRun)return;const url=URL.createObjectURL(new Blob([JSON.stringify(lastRun,null,2)],{type:'application/json'})),link=element('a');link.href=url;link.download=`relay-trace-${/^[a-f0-9]{32}$/.test(lastRun.id||'')?lastRun.id:'imported'}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    $('mode-guide').onclick=()=>setMode('guide');$('mode-live').onclick=()=>setMode('live');
+    $('tab-inspector').onclick=()=>selectTab('inspector');$('tab-simulator').onclick=()=>selectTab('simulator');$('tab-trace').onclick=()=>selectTab('trace');
+    $('play').onclick=()=>{if(playing){pause();return;}if(index>=SCENARIOS[scenario].steps.length-1)showStep(-1);playing=true;$('play').textContent='Ⅱ Pause';tick();};
+    $('next').onclick=()=>{pause();showStep(index+1);};$('previous').onclick=()=>{pause();showStep(index-1);};$('reset').onclick=()=>{pause();showStep(-1);};
+    for(const button of $('speed-group').children) button.onclick=()=>{
+      speed=Number(button.dataset.speed);
+      for(const sibling of $('speed-group').children) sibling.setAttribute('aria-pressed',String(sibling===button));
+      if(playing){clearTimeout(timer);timer=setTimeout(tick,1900/speed);}
+    };
+    $('clear-terminal').onclick=()=>clearTerminal();
+    $('sim-send').onclick=()=>simulatorSend();
+    $('sim-input').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();simulatorSend();}});
+    $('live-form').addEventListener('submit',()=>{const question=$('live-query').value.trim();if(!question)return;resetChat(null);say('user',question);term('client',`POST /api/runs · ${question.slice(0,90)}`,'t-run');});
+    $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notify('Full screen is unavailable in this browser. You can use its presentation or full-screen command.');}};
+    document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'Exit full screen':'Full screen';});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+    document.addEventListener('keydown',event=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(event.target.tagName)||event.target.closest('[role="button"],a,summary')||mode!=='guide')return;if(event.key==='ArrowRight'){event.preventDefault();$('next').click();}else if(event.key==='ArrowLeft'){event.preventDefault();$('previous').click();}else if(event.code==='Space'){event.preventDefault();$('play').click();}});
+    document.querySelectorAll('[role="tablist"]').forEach(list=>list.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;const tabs=[...list.querySelectorAll('[role="tab"]')].filter(tab=>!tab.disabled),position=tabs.indexOf(document.activeElement);if(position<0)return;event.preventDefault();const tab=tabs[(position+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];tab.focus();tab.click();}));
+    for(const [key,data] of Object.entries(SCENARIOS)){const button=element('button','scenario',data.label);button.dataset.scenario=key;button.setAttribute('aria-pressed',String(key===scenario));button.onclick=()=>{typedQuestion=null;chooseScenario(key);};$('scenario-buttons').append(button);}
+    if(['http:','https:'].includes(location.protocol))$('open-app').href='/';
+    const ASK = {
+      multi:{ q:'According to the course handbook, calculate the total course fee including GST for three students.', why:'Both document evidence and a real calculator result are required, so the router chooses multi_step.', out:'Execution would cite the fee and GST passages as [S#] and explain the arithmetic using the actual calculator output — never a number the model computed in its head. Reflection re-checks the operands before the answer is released.' },
+      direct:{ q:'Explain retrieval-augmented generation in simple terms.', why:'No uploaded document and no arithmetic are involved, so retrieval and tools are explicitly skipped.', out:'Execution answers from general knowledge with no [S#] citations, and the two skipped stages still appear in the trace as skipped rather than silently disappearing.' },
+      document:{ q:'According to the course handbook, what is the refund policy?', why:'A document-scoped question: every claim has to come from a retrieved passage.', out:'Execution grounds each claim in a retrieved passage and cites it as [S#]. citation_issues() rejects any S-number that was not in this run’s retrieved set, even if the critic approved the draft.' },
+      tool:{ q:'What is 18% of 36,000?', why:'Pure arithmetic — the tool agent picks the arguments, Python does the maths.', out:'calculate() parses the expression through an AST allowlist and returns the number. The model never executes code and never substitutes its own arithmetic for a tool result.' },
+      follow:{ q:'What would that total be for two students?', why:'A reference to the previous turn: the supervisor must rewrite it into a standalone query.', out:'The supervisor resolves “that total” from session history into a standalone_query, and retrieval runs again so the evidence is refreshed rather than reused from memory.' },
+      upload:{ q:'Index course-handbook.md into the classroom library.', why:'The ingestion path, not a question: extract, chunk, embed, persist.', out:'extract_pages() keeps PDF page numbers, chunk_pages() produces overlapping windows with character offsets, and insert_document() stores normalized float32 vectors atomically. Identical content is deduplicated by digest.' },
+      empty:{ q:'What are the campus parking charges?', why:'Nothing in the library covers this, so the honest outcome is an abstention.', out:'With required retrieval empty, ExecutionAgent returns a fixed limitation without calling EURI at all, and ReflectionAgent approves the abstention directly. No document fact is invented.' },
+      revision:{ q:'According to the project requirements, summarise the grading split.', why:'Shows the bounded revision branch when the first critique rejects the draft.', out:'A rejected critique sends the draft and feedback back through execution and reflection exactly once. A second rejection withholds the draft and returns a safe refusal instead.' }
+    };
+    function say(kind,text,label) {
+      const bubble=element('div',`bubble ${kind}`);
+      if(label)bubble.append(element('strong','',label+' '));
+      bubble.append(document.createTextNode(text));
+      $('chat').append(bubble);$('chat').scrollTop=$('chat').scrollHeight;
+      return bubble;
+    }
+    function resetChat(intro) {
+      $('chat').replaceChildren();
+      if(intro===null)return;
+      say('agent',intro||'Pick a scenario chip, or type a question to find the code path that would handle it.','Relay:');
+    }
+    function renderChips() {
+      $('chat-chips').replaceChildren();
+      for(const [key,data] of Object.entries(SCENARIOS)) {
+        const chip=element('button','',data.label);
+        chip.title=ASK[key]?ASK[key].q:data.description;
+        chip.onclick=()=>{
+          typedQuestion=null;
+          if(mode==='live'){const question=ASK[key]?ASK[key].q:'';$('sim-input').value=question;$('live-query').value=question;return;}
+          chooseScenario(key);selectTab('simulator');
+        };
+        $('chat-chips').append(chip);
+      }
+      $('phone-url').textContent=mode==='live'?(location.host||'127.0.0.1:8000'):'guided · no network';
+    }
+    function renderGuideChat(steps,idx) {
+      const ask=ASK[scenario]||{};
+      $('chat').replaceChildren();
+      say('user',typedQuestion||ask.q||SCENARIOS[scenario].title);
+      if(typedQuestion)say('system',`Guided mode matched this to the "${SCENARIOS[scenario].label}" path. Switch to Live run / saved trace to ask it for real.`);
+      say('system','Guided mode traces the real code path only. No EURI request is made and no answer is generated here.');
+      if(ask.why)say('stage','why this path · '+ask.why);
+      for(let i=0;i<=idx;i++)say('stage',`${String(i+1).padStart(2,'0')} ${steps[i].node} · ${steps[i].title}${steps[i].kind==='skipped'?' (skipped)':''}`);
+      if(idx===steps.length-1&&ask.out)say('agent',ask.out,'What the code would return:');
+    }
+    function renderRunChat(run,imported) {
+      resetChat(null);
+      if(run.query)say('user',String(run.query).slice(0,1200));
+      const answer=run.result?.answer||run.result?.error;
+      if(answer)say('agent',String(answer),'Relay:');
+      else say('system',imported?'This imported trace carries no final answer.':'This run has not produced a final answer yet.');
+      const status=(run.status||'unknown').toUpperCase();
+      say('stage',`run ${status}${run.result?.revised?' · one critic revision applied':''}${run.result?.model?' · '+run.result.model:''}`);
+    }
+    function term(tag,text,cls='t-info') {
+      const line=element('div','term-line');
+      line.append(element('span','term-time',`[${new Date().toTimeString().slice(0,8)}] `));
+      line.append(element('span',`term-tag ${cls}`,`[${tag}] `));
+      line.append(document.createTextNode(text));
+      $('terminal').append(line);$('terminal').scrollTop=$('terminal').scrollHeight;
+      while($('terminal').childElementCount>300)$('terminal').firstElementChild.remove();
+    }
+    function clearTerminal(message) {
+      $('terminal').replaceChildren();
+      term('system',message||'Event stream cleared.','t-info');
+    }
+    function renderGuideTerminal(steps,idx) {
+      $('terminal').replaceChildren();
+      term('guide',`scenario="${scenario}" stages=${steps.length} — illustrative code path, not a measured run`,'t-guide');
+      for(let i=0;i<=idx;i++) {
+        const item=steps[i];
+        term(item.node,`${item.title} — ${String(item.code||'').split('\n')[0]}`,item.kind==='skipped'?'t-skip':'t-guide');
+      }
+    }
+    function setMetrics(guide) {
+      $('metric-calls').textContent=guide?'—':String(calls);
+      $('metric-tokens').textContent=guide?'—':`${promptTokens} / ${completionTokens}`;
+      $('metric-latency').textContent=guide?'—':'—';
+      $('metric-evidence').textContent=guide?'—':`${passages} / ${toolCalls}`;
+      $('metrics-caption').textContent=guide
+        ?'Guided mode measures nothing: these counters stay empty until a real or imported run supplies them.'
+        :'Counted from the trace itself — EURI usage reported by the provider, stage duration_ms, retrieved passages and executed tool calls.';
+    }
+    function recordTelemetry(event) {
+      const usage=event.details?.usage;
+      const reported=usage?(Array.isArray(usage.calls)?usage.calls:[usage]):[];
+      for(const entry of reported) {
+        calls++;
+        promptTokens+=entry?.prompt_tokens||0;
+        completionTokens+=entry?.completion_tokens||0;
+      }
+      if(Array.isArray(event.details?.sources))passages=event.details.sources.length;
+      if(Array.isArray(event.details?.results))toolCalls=event.details.results.length;
+      $('metric-calls').textContent=String(calls);
+      $('metric-tokens').textContent=`${promptTokens} / ${completionTokens}`;
+      $('metric-evidence').textContent=`${passages} / ${toolCalls}`;
+      if(event.duration_ms!==undefined)$('metric-latency').textContent=`${event.duration_ms} ms`;
+      const cls=event.status==='failed'?'t-fail':event.status==='skipped'?'t-skip':event.status==='running'?'t-run':'t-ok';
+      const timing=event.duration_ms!==undefined?` · ${event.duration_ms} ms`:'';
+      term(event.agent||'event',`${event.status}${timing} · ${event.details?.reason||event.reason||'see the stage payload below'}`,cls);
+    }
+    function matchScenario(text) {
+      const value=text.toLowerCase();
+      if(/upload|ingest|index |embed|chunk/.test(value))return 'upload';
+      if(/parking|not in the|nothing about|no document|missing/.test(value))return 'empty';
+      if(/^(and |what about |that |those )|\bthat total\b|\binstead\b/.test(value))return 'follow';
+      const document_=/according to|handbook|policy|refund|requirement|syllabus|document|fee|schedule|grading/.test(value);
+      const tool=/calculat|total|sum|gst|%|percent|how many days|date|time in|[-+*\/]\s*\d|\d\s*[-+*\/]/.test(value);
+      if(document_&&tool)return 'multi';
+      if(document_)return 'document';
+      if(tool)return 'tool';
+      return 'direct';
+    }
+    function simulatorSend() {
+      const value=$('sim-input').value.trim();
+      if(!value)return;
+      if(mode==='live'){$('live-query').value=value;$('sim-input').value='';$('live-form').requestSubmit();return;}
+      $('sim-input').value='';
+      pause();typedQuestion=value;
+      const key=matchScenario(value);
+      if(key===scenario){showStep(-1);}else{chooseScenario(key);}
+      selectTab('simulator');
+    }
+    for(const name of Object.keys(SCHEMA)){const button=element('button','button small',name);button.dataset.schema=name;button.setAttribute('aria-pressed','false');button.onclick=()=>{schemaView(name);$('schema-detail').open=true;};$('schema-buttons').append(button);}
+    $('state-latest').onclick=()=>{stateCursor=null;renderState();};
+    schemaView('QueryRequest');
+    renderDiagram();renderChips();setMetrics(true);clearTerminal('Guided walkthrough loaded. Nothing in this pane is measured.');
+    chooseScenario('multi');inspect('orchestrator');
+  </script>
+</body>
+</html>

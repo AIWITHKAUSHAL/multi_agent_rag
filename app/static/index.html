@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f1">
+  <title>Relay · Agentic RAG Classroom</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brandmark">r.</span><strong>relay</strong><span class="brand-divider"></span><span class="brand-caption">AGENTIC RAG CLASSROOM</span></a>
+    <div class="top-actions"><span class="live-badge"><i></i> LIVE PIPELINE</span><a href="/architecture" target="_blank" rel="noopener">Architecture ↗</a><a href="/docs" target="_blank" rel="noopener">API docs ↗</a><button id="connection" class="quiet">Check connection</button></div>
+  </header>
+  <div id="notice" class="notice" role="status" hidden></div>
+  <main class="workspace">
+    <aside class="library panel">
+      <div class="section-head"><span class="eyebrow">01 / KNOWLEDGE</span><span id="doc-count" class="count">0</span></div>
+      <h2>Your document library</h2><p class="muted">Bring the evidence. Let the agents connect the dots.</p>
+      <label id="dropzone" class="dropzone" tabindex="0"><span class="upload-icon">↥</span><strong>Upload documents</strong><span>Drop here or choose files</span><small>PDF, TXT, MD · up to 10 MB each</small><input id="upload" type="file" accept=".pdf,.txt,.md" multiple hidden></label>
+      <p id="upload-status" class="helper" role="status">Embeddings are generated locally.</p>
+      <div class="library-label"><span>INDEXED DOCUMENTS</span><button id="refresh" class="text-button" aria-label="Refresh document library">↻</button></div>
+      <div id="documents" class="documents"></div>
+      <p class="helper">Select documents to narrow retrieval. With none selected, agents can search the whole library.</p>
+      <div class="retrieval-settings"><div><label for="top-k">Retrieved passages</label><output id="top-k-value">4</output></div><input id="top-k" type="range" min="1" max="8" value="4"><div class="range-label"><span>Focused</span><span>Broader context</span></div></div>
+      <div class="library-footer"><span class="small-dot"></span><div><strong>Persistent knowledge</strong><small>Documents stay indexed between sessions.</small></div></div>
+    </aside>
+    <section class="conversation panel">
+      <div class="conversation-header"><div><span class="eyebrow">02 / CONVERSATION</span><h2>Ask. Retrieve. Reason.</h2></div><button id="new-chat" class="quiet">＋ New chat</button></div>
+      <div id="messages" class="messages" aria-live="polite">
+        <div id="welcome" class="welcome"><span class="welcome-symbol">✳</span><span class="eyebrow">ONE QUESTION. SIX SPECIALISTS.</span><h1>Watch an answer<br>come together.</h1><p>Ask a question, explore your documents, or solve a calculation. Follow every agent handoff as it happens.</p>
+          <div class="suggestions"><button data-prompt="Explain retrieval-augmented generation in simple terms."><span>↗</span><strong>Start with a concept</strong><small>Explain RAG in simple terms</small></button><button data-prompt="According to the uploaded course handbook, what is the refund policy?"><span>▤</span><strong>Ask your documents</strong><small>Find a policy, with its sources</small></button><button data-prompt="Calculate 18% GST on a course fee of 12000 and give the total."><span>＋</span><strong>Put a tool to work</strong><small>Calculate a course fee with GST</small></button><button data-prompt="According to the uploaded course handbook, calculate the total course fee including GST for three students."><span>⤷</span><strong>Connect multiple steps</strong><small>Retrieve a fee, then calculate</small></button></div>
+        </div>
+      </div>
+      <div class="composer-wrap"><div id="run-status" class="run-status" role="status">Ready when you are</div><form id="chat-form" class="composer"><label for="query" class="sr-only">Your question</label><textarea id="query" rows="2" maxlength="4000" placeholder="Ask a question about your documents…" required></textarea><div class="composer-bottom"><span id="model-label">Gemini via EURI</span><button id="send" type="submit" aria-label="Send question">Send <span>↑</span></button></div></form><p class="composer-note">Live model responses · Source-backed document answers · Inspectable execution</p></div>
+    </section>
+    <aside class="observability panel">
+      <div class="section-head"><span class="eyebrow">03 / OBSERVABILITY</span><span id="trace-status" class="count">IDLE</span></div><h2>Inside the pipeline</h2><p class="muted">Real events from the current run.</p>
+      <div class="trace-tabs" role="tablist"><button id="tab-agents" role="tab" aria-selected="true">Agents</button><button id="tab-sources" role="tab" aria-selected="false">Sources <span id="source-count">0</span></button></div>
+      <div id="agent-panel"><div id="pipeline" class="pipeline"></div><div class="event-heading"><span class="eyebrow">EXECUTION LOG</span><button id="export" class="text-button" disabled>Export JSON ↗</button></div><div id="events" class="events"><p class="empty-copy">Your agent trace will appear here.<br>Every decision has a place.</p></div></div>
+      <div id="source-panel" hidden><div id="sources" class="sources"><p class="empty-copy">Retrieved passages will appear here with similarity scores and page references.</p></div></div>
+      <div class="trace-footer"><span>6 SPECIALISTS</span><span>1 SHARED CONTEXT</span></div>
+    </aside>
+  </main>
+  <footer class="page-footer"><span>Built for understanding, one handoff at a time.</span><span>Supervisor → Planner → Retrieval → Tools → Execution → Critic</span></footer>
+  <dialog id="chunk-dialog"><div class="dialog-head"><h2 id="chunk-title">Document chunks</h2><button id="close-dialog" class="quiet">Close ×</button></div><div id="chunk-content"></div></dialog>
+</body>
+</html>

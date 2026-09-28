@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title description">
+<title id="title">What calls what?</title><desc id="description">Read left to right for a question; follow the branches for evidence, tools, and model calls.</desc>
+<defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#344c62" opacity=".4"/></pattern><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.7"/></marker></defs>
+<rect width="1920" height="1080" fill="#0a1b2b"/>
+<rect width="1920" height="1080" fill="url(#grid)" opacity=".38"/>
+<text x="64" y="54" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#6baf9d" font-weight="700" text-anchor="start" letter-spacing="3">RELAY  /  CODE EXPLAINED</text>
+<text x="1856" y="54" font-family="Menlo,Consolas,monospace" font-size="16" fill="#9aafc2" font-weight="400" text-anchor="end" letter-spacing="0">02 / 04</text>
+<text x="64" y="118" font-family="Arial,Helvetica,sans-serif" font-size="48" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">What calls what?</text>
+<text x="64" y="160" font-family="Arial,Helvetica,sans-serif" font-size="21" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Read left to right for a question; follow the branches for evidence, tools, and model calls.</text>
+<rect x="64" y="1018" width="1792" height="1" rx="0" fill="#344c62" stroke="none"/>
+<text x="64" y="1052" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="1">ACTUAL CODE PATHS  ·  ARROWS SHOW CALLS OR DATA HANDOFFS</text>
+<text x="1856" y="1052" font-family="Menlo,Consolas,monospace" font-size="15" fill="#9aafc2" font-weight="400" text-anchor="end" letter-spacing="0">1920 × 1080  /  16:9</text>
+<rect x="64" y="220" width="310" height="156" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="65" y="239" width="4" height="118" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="88" y="252" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">01 / BROWSER</text>
+<text x="88" y="289" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">static/app.js</text>
+<text x="88" y="323" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">chat-form → POST /api/runs</text>
+<text x="88" y="350" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">index.html + style.css = UI</text>
+<rect x="454" y="220" width="340" height="156" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="455" y="239" width="4" height="118" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="478" y="252" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">02 / HTTP BOUNDARY</text>
+<text x="478" y="289" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/main.py</text>
+<text x="478" y="323" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">query(QueryRequest)</text>
+<text x="478" y="350" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">validate → engine.start()</text>
+<rect x="874" y="220" width="360" height="156" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="875" y="239" width="4" height="118" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="898" y="252" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">03 / CONTROLLER</text>
+<text x="898" y="289" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/orchestrator.py</text>
+<text x="898" y="323" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">start() → run() → invoke()</text>
+<text x="898" y="350" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">owns order, state, and revision</text>
+<rect x="1314" y="220" width="542" height="156" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="1315" y="239" width="4" height="118" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="1338" y="252" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">04 / SPECIALISTS</text>
+<text x="1338" y="289" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/agents.py</text>
+<text x="1338" y="323" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Supervisor → Planning → Retrieval</text>
+<text x="1338" y="350" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Tool → Execution → Reflection</text>
+<polyline points="379,295 445,295" fill="none" stroke="#69ad9b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="799,295 865,295" fill="none" stroke="#69ad9b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="1239,295 1305,295" fill="none" stroke="#69ad9b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="1435,376 1435,429 254,429 254,553" fill="none" stroke="#69ad9b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="66" y="419" font-family="Menlo,Consolas,monospace" font-size="16" fill="#69ad9b" font-weight="400" text-anchor="start" letter-spacing="0">RetrievalAgent.run()</text>
+<polyline points="1590,376 1590,471 684,471 684,553" fill="none" stroke="#dfa377" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="532" y="460" font-family="Menlo,Consolas,monospace" font-size="16" fill="#dfa377" font-weight="400" text-anchor="start" letter-spacing="0">ToolAgent.run()</text>
+<polyline points="1750,376 1750,512 1115,512 1115,553" fill="none" stroke="#94b6f0" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="907" y="501" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#94b6f0" font-weight="400" text-anchor="start" letter-spacing="0">LLM-backed agent decisions</text>
+<rect x="64" y="560" width="380" height="194" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="65" y="579" width="4" height="156" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="88" y="592" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">EVIDENCE SERVICE</text>
+<text x="88" y="629" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/retrieval.py</text>
+<text x="88" y="663" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Retriever.search()</text>
+<text x="88" y="690" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Embedder.encode(query=True)</text>
+<text x="88" y="717" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">then Store.search()</text>
+<rect x="494" y="560" width="380" height="194" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="495" y="579" width="4" height="156" rx="2" fill="#dfa377" stroke="none"/>
+<text x="518" y="592" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#dfa377" font-weight="700" text-anchor="start" letter-spacing="1.4">ALLOWLISTED COMPUTATION</text>
+<text x="518" y="629" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/tools.py</text>
+<text x="518" y="663" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">run_tool(ToolCall)</text>
+<text x="518" y="690" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">calculate() / clock / dates</text>
+<text x="518" y="717" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">return result OR tool error</text>
+<rect x="924" y="560" width="380" height="194" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="925" y="579" width="4" height="156" rx="2" fill="#94b6f0" stroke="none"/>
+<text x="948" y="592" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#94b6f0" font-weight="700" text-anchor="start" letter-spacing="1.4">LIVE MODEL ADAPTER</text>
+<text x="948" y="629" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/llm.py</text>
+<text x="948" y="663" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">structured() → complete()</text>
+<text x="948" y="690" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">AsyncOpenAI → EURI / Gemini</text>
+<text x="948" y="717" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">validated JSON + token usage</text>
+<rect x="1354" y="560" width="502" height="194" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="1355" y="579" width="4" height="156" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="1378" y="592" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">PERSISTENCE</text>
+<text x="1378" y="629" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/store.py</text>
+<text x="1378" y="663" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">Called by main, orchestrator, retrieval</text>
+<text x="1378" y="690" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">SQLite: chunks, vectors, turns, runs</text>
+<text x="1378" y="717" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">event() → events() → main.py SSE</text>
+<polyline points="254,754 254,800 1605,800 1605,761" fill="none" stroke="#69ad9b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="560" y="788" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#69ad9b" font-weight="400" text-anchor="start" letter-spacing="0">retrieval.py delegates vector persistence and cosine ranking to Store</text>
+<rect x="64" y="850" width="535" height="139" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="65" y="869" width="4" height="101" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="88" y="882" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">CONFIGURATION</text>
+<text x="88" y="919" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/config.py</text>
+<text x="88" y="953" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">main.create_app() loads Settings from .env</text>
+<rect x="627" y="850" width="593" height="139" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="628" y="869" width="4" height="101" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="651" y="882" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">CONTRACTS</text>
+<text x="651" y="919" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">app/schemas.py</text>
+<text x="651" y="953" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">FastAPI validates requests; llm validates decisions</text>
+<rect x="1248" y="850" width="608" height="139" rx="16" fill="#152d43" stroke="#344c62"/>
+<rect x="1249" y="869" width="4" height="101" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="1272" y="882" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">RETURN PATH</text>
+<text x="1272" y="919" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#edf4fa" font-weight="700" text-anchor="start" letter-spacing="0">SSE → static/app.js</text>
+<text x="1272" y="953" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#9aafc2" font-weight="400" text-anchor="start" letter-spacing="0">main.events() → watchRun() → completeRun()</text>
+</svg>

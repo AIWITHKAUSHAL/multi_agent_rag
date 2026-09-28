@@ -1,0 +1,40 @@
+[project]
+name = "agentic-rag-classroom"
+version = "1.0.0"
+description = "Six observable agents, real retrieval, and live EURI/Gemini generation"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1", "openai>=1.68,<3",
+  "pydantic-settings>=2.8,<3", "python-multipart>=0.0.20,<1",
+  "fastembed>=0.6,<1", "numpy>=2,<3", "pypdf>=5,<7", "httpx>=0.28,<1"
+]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["static/*"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = ["live: requires an EURI key and network access"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D100", "D101", "D102", "D103", "D104", "D107", "D200", "D205", "D400"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test names and assertions document behavior; require docstrings in shipped code.
+"tests/**" = ["D"]

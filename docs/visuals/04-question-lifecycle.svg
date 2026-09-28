@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title description">
+<title id="title">One question, every handoff</title><desc id="description">Control flow stays in orchestrator.py. Each specialist in agents.py updates the same run state.</desc>
+<defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cfdad9" opacity=".4"/></pattern><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.7"/></marker></defs>
+<rect width="1920" height="1080" fill="#f5f6f1"/>
+<rect width="1920" height="1080" fill="url(#grid)" opacity=".38"/>
+<text x="64" y="54" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#6baf9d" font-weight="700" text-anchor="start" letter-spacing="3">RELAY  /  CODE EXPLAINED</text>
+<text x="1856" y="54" font-family="Menlo,Consolas,monospace" font-size="16" fill="#617783" font-weight="400" text-anchor="end" letter-spacing="0">04 / 04</text>
+<text x="64" y="118" font-family="Arial,Helvetica,sans-serif" font-size="48" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">One question, every handoff</text>
+<text x="64" y="160" font-family="Arial,Helvetica,sans-serif" font-size="21" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">Control flow stays in orchestrator.py. Each specialist in agents.py updates the same run state.</text>
+<rect x="64" y="1018" width="1792" height="1" rx="0" fill="#cfdad9" stroke="none"/>
+<text x="64" y="1052" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="1">ACTUAL CODE PATHS  ·  ARROWS SHOW CALLS OR DATA HANDOFFS</text>
+<text x="1856" y="1052" font-family="Menlo,Consolas,monospace" font-size="15" fill="#617783" font-weight="400" text-anchor="end" letter-spacing="0">1920 × 1080  /  16:9</text>
+<rect x="64" y="202" width="1792" height="81" rx="16" fill="#e7edf2" stroke="#d3dce3"/>
+<text x="88" y="236" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#56758e" font-weight="700" text-anchor="start" letter-spacing="2">ENTRY</text>
+<text x="88" y="263" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">app.js → main.query() → Orchestrator.start() → run() → invoke(agent)</text>
+<text x="1257" y="251" font-family="Arial,Helvetica,sans-serif" font-size="19" fill="#56758e" font-weight="400" text-anchor="start" letter-spacing="0">Store.history() loads prior turns</text>
+<rect x="64" y="320" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="65" y="339" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="88" y="352" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">01 / SUPERVISOR</text>
+<text x="88" y="389" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">SupervisorAgent.run()</text>
+<text x="88" y="423" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">llm.structured(..., Route)</text>
+<text x="88" y="450" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">history + question → standalone intent</text>
+<text x="88" y="477" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;route&#x27;]</text>
+<rect x="690" y="320" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="691" y="339" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="714" y="352" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">02 / PLANNING</text>
+<text x="714" y="389" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">PlanningAgent.run()</text>
+<text x="714" y="423" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">llm.structured(..., Plan)</text>
+<text x="714" y="450" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">route → steps + retrieval query</text>
+<text x="714" y="477" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;plan&#x27;]</text>
+<rect x="1316" y="320" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="1317" y="339" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="1340" y="352" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">03 / RETRIEVAL</text>
+<text x="1340" y="389" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">RetrievalAgent.run()</text>
+<text x="1340" y="423" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">retrieval.search() → store.search()</text>
+<text x="1340" y="450" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">Top-K passages OR explicit skip</text>
+<text x="1340" y="477" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;sources&#x27;]</text>
+<rect x="64" y="579" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="65" y="598" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="88" y="611" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">04 / TOOLS</text>
+<text x="88" y="648" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">ToolAgent.run()</text>
+<text x="88" y="682" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">llm.structured(..., ToolSelection)</text>
+<text x="88" y="709" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">tools.run_tool() → result OR error</text>
+<text x="88" y="736" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;tools&#x27;]</text>
+<rect x="690" y="579" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="691" y="598" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="714" y="611" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">05 / EXECUTION</text>
+<text x="714" y="648" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">ExecutionAgent.run()</text>
+<text x="714" y="682" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">llm.complete(evidence + tools)</text>
+<text x="714" y="709" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">empty retrieval → honest abstention</text>
+<text x="714" y="736" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;answer&#x27;]</text>
+<rect x="1316" y="579" width="540" height="188" rx="16" fill="#ffffff" stroke="#cfdad9"/>
+<rect x="1317" y="598" width="4" height="150" rx="2" fill="#69ad9b" stroke="none"/>
+<text x="1340" y="611" font-family="Arial,Helvetica,sans-serif" font-size="14" fill="#69ad9b" font-weight="700" text-anchor="start" letter-spacing="1.4">06 / REFLECTION</text>
+<text x="1340" y="648" font-family="Arial,Helvetica,sans-serif" font-size="27" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">ReflectionAgent.run()</text>
+<text x="1340" y="682" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">citation_issues() + llm.structured()</text>
+<text x="1340" y="709" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">review evidence, citations, tool results</text>
+<text x="1340" y="736" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">writes state[&#x27;critique&#x27;]</text>
+<polyline points="611,412 682,412" fill="none" stroke="#3d8274" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="1237,412 1308,412" fill="none" stroke="#3d8274" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="611,671 682,671" fill="none" stroke="#3d8274" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="1237,671 1308,671" fill="none" stroke="#3d8274" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<polyline points="1586,508 1586,546 334,546 334,571" fill="none" stroke="#3d8274" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="685" y="537" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#3d8274" font-weight="400" text-anchor="start" letter-spacing="0">orchestrator invokes the next specialist</text>
+<polyline points="1586,767 1586,822 960,822 960,775" fill="none" stroke="#c86d46" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="none"/>
+<text x="992" y="809" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#b65f3c" font-weight="400" text-anchor="start" letter-spacing="0">Rejected? One revision: Execution → Reflection</text>
+<rect x="64" y="865" width="1120" height="126" rx="16" fill="#e8eee7" stroke="#c9d7c8"/>
+<text x="88" y="899" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#3d8274" font-weight="700" text-anchor="start" letter-spacing="0">FINALIZE / orchestrator.py → store.py → main.py → app.js</text>
+<text x="88" y="936" font-family="Arial,Helvetica,sans-serif" font-size="21" fill="#172e38" font-weight="400" text-anchor="start" letter-spacing="0">Approved: answer + citations. Rejected again: safe refusal with needs_review.</text>
+<text x="88" y="966" font-family="Menlo,Consolas,monospace" font-size="19" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">save_turn() + update_run() → events() SSE → completeRun()</text>
+<rect x="1212" y="865" width="644" height="126" rx="16" fill="#e7edf2" stroke="#d3dce3"/>
+<text x="1236" y="900" font-family="Arial,Helvetica,sans-serif" font-size="16" fill="#56758e" font-weight="700" text-anchor="start" letter-spacing="1">TRACE AT EVERY STAGE</text>
+<text x="1236" y="936" font-family="Arial,Helvetica,sans-serif" font-size="22" fill="#172e38" font-weight="700" text-anchor="start" letter-spacing="0">invoke() → emit() → Store.event()</text>
+<text x="1236" y="967" font-family="Arial,Helvetica,sans-serif" font-size="18" fill="#617783" font-weight="400" text-anchor="start" letter-spacing="0">Running / completed / skipped / failed + timing</text>
+</svg>
