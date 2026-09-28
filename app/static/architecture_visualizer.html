@@ -64,6 +64,10 @@
     .node.selected rect { stroke:var(--cyan); stroke-width:2.5; }
     .node.skipped rect { stroke-dasharray:5 4; opacity:.5; }
     .node.failed rect { stroke:var(--red); fill:#3e2533; }
+    .node.dependency rect { stroke:var(--purple); stroke-dasharray:6 4; fill:#27263e; }
+    .node.dependency-current rect { stroke-width:2.8; fill:#393052; }
+    .wire.dependency { stroke:var(--purple); stroke-dasharray:6 4; opacity:1; }
+    .dependency-note { padding:10px 13px; border-left:3px dashed var(--purple); background:#191d30; }
     .node text { pointer-events:none; }
     .node-kicker { fill:#85a1b5; font:11px var(--mono); letter-spacing:.6px; }
     .node-title { fill:#edf4fa; font-size:19px; font-weight:600; }
@@ -107,6 +111,10 @@
     .source p { white-space:pre-wrap; max-height:230px; overflow:auto; color:var(--muted); }
     .live-panel { border:1px solid var(--line); border-radius:10px; background:#142536; padding:18px; margin-bottom:18px; }
     .live-panel form { display:flex; flex-wrap:wrap; align-items:end; gap:10px; }
+    .upload-panel { margin:16px 0; padding:14px; border:1px solid var(--line); border-radius:8px; }
+    .upload-panel h3 { margin:0 0 10px; font-size:14px; }
+    .upload-panel input { max-width:100%; }
+    .upload-panel pre { max-height:300px; overflow:auto; margin-top:10px; }
     .live-panel label { display:flex; flex-direction:column; gap:5px; font-size:11px; color:var(--muted); }
     .live-panel .question-label { flex:1 1 380px; }
     textarea { resize:vertical; min-height:65px; max-height:180px; width:100%; font-size:13px; }
@@ -184,14 +192,24 @@
     <section class="workspace">
       <div id="live-panel" class="live-panel" hidden>
         <div class="canvas-heading"><div><span class="eyebrow">ACTUAL APPLICATION EVENTS</span><h2>Watch your agents work.</h2><p id="connection-status">Connect to the app, attach a run ID, or import an exported trace.</p></div><button id="connect" class="button">Check server</button></div>
+        <section id="upload-panel" class="upload-panel" aria-labelledby="upload-heading">
+          <h3 id="upload-heading">Upload a document live</h3>
+          <form id="upload-form"><label for="upload-file">PDF, TXT or Markdown<input id="upload-file" type="file" accept=".pdf,.txt,.md" required></label><button id="upload-send" class="button primary" type="submit">Upload & index</button></form>
+          <p id="upload-status" class="hint" role="status">Choose a file to add it to the shared document library. Uploads do not require an EURI key.</p>
+          <p class="hint">The server extracts text, creates chunks, embeds them and saves the document. This endpoint returns the completed result; individual ingestion stages are not streamed. The first upload may take longer while the embedding model downloads.</p>
+          <details id="upload-result" hidden><summary>Server response</summary><pre id="upload-output" class="code"></pre></details>
+          <button id="upload-chunks" class="button small" type="button" hidden>Inspect stored chunks</button>
+          <pre id="upload-chunk-output" class="code" hidden></pre>
+        </section>
         <form id="live-form"><label class="question-label" for="live-query">Question<textarea id="live-query" maxlength="4000" required placeholder="According to the course handbook, calculate the total fee including GST for three students."></textarea></label><label for="live-k">Top-K<select id="live-k"><option>2</option><option selected>4</option><option>6</option><option>8</option></select></label><button id="live-send" class="button primary" type="submit">Run with EURI ↑</button><button id="new-session" class="button" type="button">New session</button></form>
         <div class="live-options"><label class="sr-only" for="run-id">Existing run ID</label><input id="run-id" maxlength="32" placeholder="Paste an existing 32-character run ID"><button id="attach" class="button small">Attach run</button><button id="detach" class="button small" disabled>Detach</button><button id="import" class="button small">Import trace JSON</button><input id="trace-file" type="file" accept=".json,application/json" hidden><button id="export" class="button small" disabled>Export trace</button></div>
-        <p class="hint">Queries use the whole document library. Upload documents in the classroom app first. Live requests consume EURI quota. Detach stops viewing; the server run continues.</p>
+        <p class="hint">Queries use the whole document library, including uploads above. Live questions consume EURI quota. Detach stops viewing; the server run continues.</p>
         <div id="answer" class="answer" hidden></div>
       </div>
       <div class="canvas-heading"><div><span class="eyebrow" id="canvas-eyebrow">THE CODE, IN MOTION</span><h2 id="scenario-title">Retrieve, compute, then review.</h2><p id="scenario-description">A multi-step question connects document evidence with a real tool result.</p></div><div class="legend"><span>API / control</span><span>Evidence / state</span><span>Model / review</span></div></div>
       <div class="canvas-scroll" aria-label="Architecture diagram; scroll horizontally on smaller screens"><svg id="diagram" viewBox="0 0 1440 810" role="img" aria-labelledby="svg-title svg-description"><title id="svg-title">Relay runtime architecture</title><desc id="svg-description">Select a node to inspect its file, function, inputs, outputs and calls. The orchestrator invokes all six agents. Services support the agents rather than acting as additional stages.</desc><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.4"/></marker></defs><g id="wires"></g><g id="nodes"></g><circle id="packet" r="5" hidden></circle></svg></div>
       <div class="step-strip" aria-live="polite"><span id="step-number" class="step-number">READY</span><div><strong id="step-title">Choose a scenario and press Play.</strong><p id="step-detail">Click any component to inspect the exact source file and its callers. Use the arrow buttons to explain one step at a time.</p></div></div>
+      <p id="dependency-note" class="hint dependency-note" aria-live="polite" hidden></p>
       <div class="progress" role="progressbar" aria-label="Walkthrough progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-bar"></span></div><div id="timeline" class="timeline" aria-label="Jump to a walkthrough step"></div>
       <section id="state-panel" class="state-panel" aria-labelledby="state-title">
         <div class="state-heading"><div><span class="eyebrow">SCHEMAS + SHARED STATE</span><h2 id="state-title">How each handoff changes state</h2></div><span id="state-origin" class="badge">CODE GUIDE</span></div>
@@ -201,7 +219,12 @@
         <details id="schema-detail" open><summary id="schema-title">QueryRequest · app/schemas.py</summary><p id="schema-description" class="hint"></p><table class="schema-table"><thead><tr><th scope="col">Field</th><th scope="col">Type, default and constraints</th></tr></thead><tbody id="schema-fields"></tbody></table><p id="schema-use" class="hint"></p></details>
         <div class="state-heading"><p id="state-stage" class="state-summary">Waiting for a step.</p><button id="state-latest" class="button small" hidden>Follow latest event</button></div>
         <p id="state-contract" class="hint"></p><p id="state-provenance" class="hint"></p>
-        <div class="state-grid"><div><p class="field-label">THIS STEP · BEFORE → AFTER</p><pre id="state-diff" class="code"></pre></div><div><p class="field-label">ACCUMULATED STATE</p><pre id="state-snapshot" class="code"></pre></div></div>
+        <div class="state-grid" aria-live="polite">
+          <div><h3 class="field-label">INPUT · WHAT THIS STEP RECEIVED</h3><p id="step-input-note" class="hint"></p><pre id="step-input" class="code"></pre></div>
+          <div><h3 class="field-label">OUTPUT · WHAT THIS STEP RETURNED</h3><p id="step-output-note" class="hint"></p><pre id="step-output" class="code"></pre></div>
+          <div><h3 class="field-label">STATE UPDATE · BEFORE → AFTER</h3><p class="hint">Only fields written into shared state at this step.</p><pre id="state-diff" class="code"></pre></div>
+          <div><h3 class="field-label">ACCUMULATED STATE · AFTER THIS STEP</h3><p class="hint">Known shared fields carried forward to the next step.</p><pre id="state-snapshot" class="code"></pre></div>
+        </div>
         <details style="margin-top:12px"><summary>Inspect an earlier state transition</summary><div id="state-history" class="state-history" aria-label="State transitions"></div></details>
       </section>
       <details class="file-browser"><summary>Explore supporting files, tools, and tests</summary><div id="file-grid" class="file-grid"></div></details>
@@ -287,9 +310,20 @@
     let stateFrames=[], stateValues={}, stateCursor=null, stateOrigin='CODE GUIDE';
     const copyState = value => JSON.parse(JSON.stringify(value));
     const pickFields = (value,keys) => Object.fromEntries(keys.filter(key=>Object.hasOwn(value,key)).map(key=>[key,value[key]]));
-    function stateFrame(stage,label,patch={},note='') {
+    const INPUT_FIELDS = {
+      orchestrator:['query','session_id','top_k','document_ids'], supervisor:['query','history','documents','document_ids'],
+      planning:['query','route'], retrieval:['route','plan','top_k','document_ids'], tool:['route','sources','plan'],
+      execution:['route','plan','sources','tools','feedback'], reflection:['answer','route','sources','tools'],
+      revision:['answer','critique'], final:['answer','sources','tools','route','plan','critique']
+    };
+    function stateFrame(stage,label,patch={},note='',handoff={}) {
       const before={...stateValues},savedPatch=copyState(patch);stateValues={...stateValues,...savedPatch};
-      stateFrames.push({stage,label,before,after:{...stateValues},patch:savedPatch,note});
+      const keys=INPUT_FIELDS[stage]||[];
+      const missing=keys.filter(key=>key!=='feedback'&&!Object.hasOwn(before,key));
+      stateFrames.push({stage,label,before,after:{...stateValues},patch:savedPatch,note,
+        input:pickFields(before,keys),output:null,
+        inputNote:`Fields consumed from shared state.${missing.length?' Not observed: '+missing.join(', ')+'.':''}`,
+        outputNote:'No return payload observed at this step.',...copyState(handoff)});
     }
     function resetState(origin='SERVER TRACE') { stateFrames=[];stateValues={};stateCursor=null;stateOrigin=origin;renderState(); }
     function schemaView(name) {
@@ -306,6 +340,10 @@
       $('state-stage').textContent=item?`${position+1}. ${item.label}`:'Choose a step or start a live run.';
       $('state-contract').textContent=`Contracts: ${contract.schemas.join(' → ')||'Plain dictionaries / text; no schema class at this step.'} Reads: ${contract.reads} Writes: ${contract.writes}`;
       $('state-provenance').textContent=(stateOrigin==='CODE GUIDE'?'Illustrative values and <placeholders> explain the code; they are not generated answers. ':stateOrigin==='IMPORTED TRACE'?'Values reconstructed from the imported file; not an authenticated server snapshot. ':'Values reconstructed from this request and server events. ')+(item?.note||'')+(stateOrigin!=='CODE GUIDE'?' Only known fields are shown. History and the document inventory are not exposed in traces.':'');
+      $('step-input-note').textContent=item?.inputNote||'Select a step to inspect its incoming data.';
+      $('step-output-note').textContent=item?.outputNote||'Select a step to inspect its returned data.';
+      $('step-input').textContent=JSON.stringify(item?.input||{},null,2);
+      $('step-output').textContent=item?.output==null?'No return payload available.':JSON.stringify(item.output,null,2);
       const changes=Object.entries(item?.patch||{}).map(([key,value])=>`state[${JSON.stringify(key)}]\n  BEFORE: ${Object.hasOwn(item.before,key)?JSON.stringify(item.before[key],null,2):'(not yet set / not observed)'}\n  AFTER:  ${JSON.stringify(value,null,2)}`);
       $('state-diff').textContent=changes.join('\n\n')||'No observed state write at this step.';
       $('state-snapshot').textContent=JSON.stringify(item?.after||{},null,2);
@@ -317,7 +355,7 @@
     }
     function seedRuntimeState(request) {
       const patch=pickFields(request,['query','session_id','top_k','document_ids']);
-      if(Object.keys(patch).length)stateFrame('orchestrator','Request fields available',patch,'Request fields initialize state when the queued run begins; this is not an initialization event.');
+      if(Object.keys(patch).length)stateFrame('orchestrator','Request fields available',patch,'Request fields initialize state when the queued run begins; this is not an initialization event.',{input:patch,inputNote:'Known request fields supplied to the run.'});
       renderState();
     }
     function observeState(event) {
@@ -341,7 +379,53 @@
       if(event.status==='running')note='Stage started; completion values have not arrived.';
       if(event.status==='failed')note='Stage failed. Internal partial writes are not exposed; retain the last observed values.';
       if(event.agent==='final')note='The persisted response is separate from this shared-state draft. save_turn() appends conversation history in SQLite; this run’s loaded history stays unchanged. See the final answer above.';
-      stateFrame(stage,`${event.agent} / ${event.status}`,patch,note);renderState();
+      const returned=['completed','skipped'].includes(event.status)&&Object.hasOwn(event,'details');
+      const finalResult=event.agent==='final'?lastRun?.result:null;
+      stateFrame(stage,`${event.agent} / ${event.status}`,patch,note,{
+        output:finalResult|| (returned?d:null),
+        outputNote:finalResult?'Persisted run result; separate from shared state.':returned?'Recorded return payload, including trace metadata such as usage and reason.':event.status==='running'?'In progress; no output received yet.':event.status==='failed'?'Failed; no successful output received.':event.reason||'This event does not include a return payload.'
+      });renderState();
+    }
+    function guideHandoff(item,stage,patch,i) {
+      const request={query:typedQuestion||ASK[scenario].q,session_id:'<current conversation ID>',top_k:4,document_ids:[]};
+      const handoff={output:null,outputNote:'Illustrative handoff; no model or tool is called.'};
+      if(scenario==='upload'){
+        const transfers=[
+          [{file:'<selected file bytes>',name:'<filename>'},{method:'POST /api/documents',body:'<multipart FormData>'}],
+          [{body:'<multipart FormData>'},{file:'<validated file bytes>',name:'<filename>'}],
+          [{file:'<validated file bytes>'},{pages:['<page number and extracted text>']}],
+          [{pages:['<page number and extracted text>']},{chunks:['<text, page and start/end offsets>']}],
+          [{chunks:['<text, page and start/end offsets>']},{vectors:'<normalized embeddings, or reuse an existing document>'}],
+          [{document:'<metadata>',chunks:'<chunks>',vectors:'<embeddings>'},{document:'<persisted metadata>',created:'<true for a new document; false for a duplicate>'}],
+          [{document:'<returned metadata>',created:'<boolean>'},{library:'<refreshed document list>'}]
+        ];
+        return {...handoff,input:transfers[i][0],output:transfers[i][1],inputNote:'Illustrative upload data received at this step; no per-question shared state.'};
+      }
+      if(item.node==='browser')return {...handoff,input:request,output:{method:'POST /api/runs',body:request},inputNote:'Question and options received from the user interface.'};
+      if(item.node==='api')return {...handoff,input:request,output:{validated_request:request},inputNote:'HTTP request body received by FastAPI.'};
+      if(stage==='orchestrator')return {...handoff,input:request,output:{http_status:202,id:'<new run ID>'},inputNote:'Validated QueryRequest. History and document inventory are loaded into state.'};
+      if(stage==='revision')return {...handoff,outputNote:'The orchestrator saves feedback for the next execution call; no agent return value.'};
+      if(item.node==='retriever')return {...handoff,input:{query:stateValues.plan.retrieval_query||stateValues.route.standalone_query},output:{embedding:'<normalized query vector>'},inputNote:'Planned search query passed to the embedder.'};
+      if(item.node==='store')return {...handoff,input:{embedding:'<normalized query vector>',top_k:stateValues.top_k,document_ids:stateValues.document_ids},output:patch.sources,inputNote:'Search vector and scope used to rank stored chunks.'};
+      if(item.node==='tools')return {...handoff,input:{calls:['<validated ToolCall: name, arguments, reason>']},output:patch.tools,inputNote:'Allowed calls selected by ToolAgent.'};
+      if(item.node==='llm')return {...handoff,output:patch.answer};
+      if(stage==='supervisor')handoff.output={...patch.route,usage:'<provider usage>'};
+      if(stage==='planning')handoff.output={...patch.plan,usage:'<provider usage>'};
+      if(stage==='retrieval')handoff.output=patch.sources?{skipped:true,reason:'The route does not require document evidence.'}:{search_request:{query:stateValues.plan.retrieval_query||stateValues.route.standalone_query,top_k:stateValues.top_k,document_ids:stateValues.document_ids}};
+      if(stage==='retrieval'&&!patch.sources)handoff.outputNote='Outgoing search request; the agent return payload is pending until search completes.';
+      if(stage==='tool'){
+        handoff.output=item.kind==='skipped'?{skipped:true,reason:'The route does not require computation or a clock.'}:{calls:['<validated ToolCall: name, arguments, reason>'],reason:'<tool selection explanation>'};
+        if(item.kind!=='skipped')handoff.outputNote='Intermediate ToolSelection; ToolAgent returns reason, results and usage after the calls finish.';
+      }
+      if(stage==='execution'){
+        handoff.output=patch.answer?{answer:patch.answer}:null;
+        if(!patch.answer)handoff.outputNote='Context received; waiting for the provider to return a draft.';
+      }
+      if(stage==='reflection')handoff.output={...patch.critique,...(scenario==='empty'?{}:{citation_checks:'<deterministic citation checks>',usage:'<provider usage>'})};
+      if(stage==='final')handoff.output={...pickFields(stateValues,['answer','sources','tools','route','plan','critique']),revised:scenario==='revision',model:'<configured model>',duration_ms:'<measured runtime duration>'};
+      if(stage==='final')handoff.outputNote='Illustrative persisted response. A rejected final critique replaces the response answer with a refusal; the state draft remains separate.';
+      if(stage==='telemetry')return {...handoff,input:{events:'<persisted trace events>',result:'<persisted response>'},output:{stream:'<SSE events and terminal result delivered to the browser>'},inputNote:'Persisted events and result received by the streaming endpoint.'};
+      return handoff;
     }
     function guideState(steps,idx) {
       stateFrames=[];stateValues={};stateCursor=null;stateOrigin='CODE GUIDE';
@@ -362,7 +446,7 @@
         else if(stage==='execution'){executions++;if(empty)patch={answer:'<fixed missing-evidence limitation from ExecutionAgent>'};else if(executions>1)patch={answer:'<revised draft using feedback>'};else note='Context is built; the draft is assigned after the EURI call returns.';}
         else if(stage==='llm'){stage='execution';patch={answer:'<generated draft from the real provider at runtime>'};}
         else if(stage==='reflection'){reflections++;patch={critique:{approved:scenario==='revision'&&reflections===1?false:true,issues:scenario==='revision'&&reflections===1?['<issue identified by critic>']:[],feedback:empty?'Correctly abstained with no evidence.':'<critic feedback>'}};if(scenario==='revision'&&reflections>1)note='This example shows approval after revision. A second rejection produces needs_review and withholds the draft.';}
-        stateFrame(stage,item.title,patch,note);
+        stateFrame(stage,item.title,patch,note,guideHandoff(item,stage,patch,i));
       }
       renderState();
     }
@@ -418,7 +502,59 @@
     }
     function stopMotion() { clearTimeout(timer);timer=null;cancelAnimationFrame(frame);frame=null;animationEpoch++;$('packet').hidden=true; }
     function pause() { playing=false;stopMotion();$('play').textContent='▶ Play'; }
-    function clearHighlights() { document.querySelectorAll('.node').forEach(n=>n.classList.remove('active','visited','skipped','failed'));document.querySelectorAll('.wire').forEach(n=>n.classList.remove('active')); }
+    function clearHighlights() { document.querySelectorAll('.node').forEach(n=>n.classList.remove('active','visited','skipped','failed','dependency','dependency-current'));document.querySelectorAll('.wire').forEach(n=>n.classList.remove('active','dependency'));$('dependency-note').hidden=true; }
+    function showDependencies(services,current=[],description='') {
+      document.querySelectorAll('.node').forEach(n=>n.classList.remove('dependency','dependency-current'));
+      document.querySelectorAll('.wire').forEach(n=>n.classList.remove('dependency'));
+      for(const id of services)$(`node-${id}`)?.classList.add('dependency');
+      for(const id of current)$(`node-${id}`)?.classList.add('dependency-current');
+      for(const [from,to] of EDGES){
+        const node=$(`node-${from}`);
+        if(services.includes(to)&&(services.includes(from)||node?.classList.contains('visited')||node?.classList.contains('active')))$(`edge-${from}-${to}`)?.classList.add('dependency');
+      }
+      $('dependency-note').hidden=!services.length;
+      $('dependency-note').textContent=`Purple dashed boxes and links show code dependencies, not separately timed service events. ${description}`;
+    }
+    function runtimeDependencies() {
+      const route=observed.findLast(e=>e.agent==='supervisor'&&e.status==='completed')?.details;
+      const retrieval=observed.findLast(e=>e.agent==='retrieval'&&['completed','skipped'].includes(e.status));
+      const emptyEvidence=route?.needs_retrieval===true&&retrieval?.status==='completed'&&retrieval.details?.sources?.length===0;
+      const latest=new Map();
+      for(const event of observed)latest.set(event.agent,event);
+      const dependencies=event=>{
+        const {agent,status,details={}}=event;
+        if(['skipped','failed','revision'].includes(status))return [];
+        const running=status==='running';
+        if(['supervisor','planning'].includes(agent))return ['schemas','llm'];
+        if(agent==='retrieval')return route?.needs_retrieval===false?[]:['retriever','store'];
+        if(agent==='tool')return route?.needs_tools===false?[]:[...((running||details.usage)?['schemas','llm']:[]),...((running||details.results?.length)?['tools']:[])];
+        if(agent==='execution')return (running&&!emptyEvidence)||details.usage?['llm']:[];
+        if(agent==='reflection')return (running&&!emptyEvidence)||details.usage?['schemas','llm']:[];
+        if(agent==='final')return ['store','telemetry'];
+        return [];
+      };
+      if(!observed.length)return;
+      const services=[...new Set(['config','schemas','store','telemetry',...[...latest.values()].flatMap(dependencies)])];
+      const last=observed.at(-1),current=last.status==='running'?dependencies(last):[];
+      const active=current.length?`Current ${last.agent} dependencies: ${current.map(id=>NODE[id].title).join(', ')}. `:'';
+      showDependencies(services,current,`${active}Settings configure the app at startup; typed contracts validate requests and model decisions. Storage and SSE support the recorded trace. Skipped stages do not add their optional services.`);
+    }
+    function guideDependencies(steps,idx) {
+      if(idx<0)return;
+      const support=['retriever','tools','llm','store','config','schemas','telemetry'];
+      const dependencies=item=>{
+        if(item.kind==='skipped')return [];
+        if(support.includes(item.node))return [item.node];
+        if(['supervisor','planning'].includes(item.node))return ['schemas','llm'];
+        if(item.node==='retrieval')return ['retriever','store'];
+        if(item.node==='tool')return ['schemas','llm','tools'];
+        if(['execution','reflection'].includes(item.node)&&scenario!=='empty')return item.node==='reflection'?['schemas','llm']:['llm'];
+        if(['orchestrator','final'].includes(item.node))return ['store'];
+        return [];
+      };
+      const services=[...new Set(['config',...(scenario==='upload'?[]:['schemas']),...steps.slice(0,idx+1).flatMap(dependencies)])];
+      showDependencies(services,dependencies(steps[idx]),'Guided code path: settings are loaded at startup. Highlighted services support the selected and preceding steps; no runtime measurement is implied.');
+    }
     function animate(from,to) {
       const path=$(`edge-${from}-${to}`); if(!path)return;path.classList.add('active');
       if(reducedMotion.matches)return;
@@ -435,7 +571,7 @@
       if(index>=0){const item=steps[index];$(`node-${item.node}`).classList.add('active');$('step-number').textContent=`${index+1} / ${steps.length}`;$('step-title').textContent=item.title;$('step-detail').textContent=item.detail;inspect(item.node,false);if(item.from)animate(item.from,item.node);}
       else{$('step-number').textContent='READY';$('step-title').textContent='Choose a scenario and press Play.';$('step-detail').textContent='Click any component to inspect its source file, callers, and outputs. Guided playback never calls the model.';}
       $('metric-one').textContent=String(index+1);
-      if(mode==='guide'){renderGuideChat(steps,index);renderGuideTerminal(steps,index);guideState(steps,index);}
+      if(mode==='guide'){renderGuideChat(steps,index);renderGuideTerminal(steps,index);guideState(steps,index);guideDependencies(steps,index);}
       updatePlayback();
     }
     function chooseScenario(key) {
@@ -454,22 +590,22 @@
       if(next==='guide'){typedQuestion=null;setMetrics(true);clearTerminal('Guided walkthrough loaded. Nothing here is measured.');chooseScenario(scenario);}else{resetRuntime();resetChat('Live mode. Ask a question here or in the panel on the left — the answer below is the one the run actually produced.');term('system','Waiting for a real run, an attached run ID, or an imported trace.','t-info');$('scenario-title').textContent='Architecture, driven by actual events.';$('scenario-description').textContent='Run a real question, attach a run ID, or import the classroom app’s JSON export.';$('step-number').textContent='WAITING';$('step-title').textContent='No runtime events loaded.';$('step-detail').textContent='Open this page through /architecture for same-origin API access. Imported JSON works offline.';selectTab('trace');}
     }
     function sameOrigin(){if(!['http:','https:'].includes(location.protocol))throw new Error('For live mode, open http://127.0.0.1:8000/architecture after starting the FastAPI app. Offline walkthroughs and trace import work in this file.');}
-    async function api(path,options={}){sameOrigin();const response=await fetch(path,{...options,signal:AbortSignal.timeout(120000)});let data;try{data=await response.json();}catch{throw new Error('This origin is not serving the Relay API. Open the page through the FastAPI /architecture route.');}if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:`HTTP ${response.status}: ${JSON.stringify(data.detail||data)}`);return data;}
+    async function api(path,options={}){sameOrigin();const response=await fetch(path,{...options,signal:options.signal||AbortSignal.timeout(120000)});let data;try{data=await response.json();}catch{throw new Error('This origin is not serving the Relay API. Open the page through the FastAPI /architecture route.');}if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:`HTTP ${response.status}: ${JSON.stringify(data.detail||data)}`);return data;}
     const post=data=>({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    function setBusy(value){busy=value;for(const id of ['live-send','attach','new-session','import','connect','mode-guide','mode-live'])$(id).disabled=value;$('live-query').disabled=value;$('detach').disabled=!value;}
+    function setBusy(value){busy=value;for(const id of ['live-send','attach','new-session','import','connect','mode-guide','mode-live','upload-file','upload-send','upload-chunks'])$(id).disabled=value;$('live-query').disabled=value;$('detach').disabled=!value;}
     function resetRuntime(){resetState();stopMotion();clearHighlights();seen=new Set();observed=[];lastRun=null;$('trace-log').replaceChildren();$('sources').replaceChildren();$('answer').hidden=true;$('answer').textContent='';$('export').disabled=true;$('metric-one').textContent='0';calls=promptTokens=completionTokens=passages=toolCalls=0;setMetrics(false);clearTerminal();resetChat();}
     function displaySources(sources){$('sources').replaceChildren();for(const item of sources||[]){const card=element('details','source');card.append(element('summary','',`[${item.citation||'?'}] ${item.name||'Source'} · page ${item.page??'?'} · score ${item.score??'—'}`),element('p','',String(item.text||'')));$('sources').append(card);}}
     function runtimeEvent(event){
       const key=String(event.id??JSON.stringify(event));if(seen.has(key))return;seen.add(key);observed.push(event);$('metric-one').textContent=String(observed.length);
       const id=event.agent==='final'?'final':event.agent;const node=$(`node-${id}`);
       if(node){document.querySelectorAll('.node.active').forEach(n=>n.classList.remove('active'));node.classList.add(event.status==='failed'?'failed':event.status==='skipped'?'skipped':'visited');if(event.status==='running')node.classList.add('active');inspect(id,false);if(event.status==='running'){const order=['supervisor','planning','retrieval','tool','execution','reflection'];let previous=order.indexOf(id)-1;const pastRunning=observed.slice(0,-1).filter(e=>e.status==='running').at(-1)?.agent;if(pastRunning==='reflection'&&id==='execution')animate('reflection','execution');else animate(previous>=0?order[previous]:'orchestrator',id);}}
-      recordTelemetry(event);observeState(event);
+      recordTelemetry(event);observeState(event);runtimeDependencies();
       const duration=event.duration_ms!==undefined?` · ${event.duration_ms} ms`:'';addLog(`${event.timestamp||'Imported event'} · ${event.agent} · ${event.status}${duration}`,event.details||{reason:event.reason||''});
       $('step-number').textContent='EVENT';$('step-title').textContent=`${event.agent} / ${event.status}`;$('step-detail').textContent=event.details?.reason||event.reason||'Expand this event in the trace panel to inspect the actual payload.';
       if(event.details?.sources)displaySources(event.details.sources);
     }
     function validateRun(run){if(!run||typeof run!=='object'||!Array.isArray(run.events)||!run.events.length)throw new Error('Expected a Relay run export containing a non-empty events array.');if(run.events.length>2000)throw new Error('Trace exceeds 2,000 events.');for(const event of run.events){if(!event||typeof event!=='object'||typeof event.agent!=='string'||typeof event.status!=='string')throw new Error('Each trace event must have string agent and status fields.');}if(run.result!=null&&(typeof run.result!=='object'||Array.isArray(run.result)))throw new Error('Run result must be an object.');if(run.result?.sources!==undefined&&!Array.isArray(run.result.sources))throw new Error('Run sources must be an array.');return run;}
-    function showResult(run,imported=false){stateOrigin=imported?'IMPORTED TRACE':'SERVER TRACE';if(!stateFrames.length)seedRuntimeState(run);lastRun=run;$('export').disabled=false;for(const event of run.events||[])runtimeEvent(event);renderState();renderRunChat(run,imported);$('metric-two').textContent=(run.status||'UNKNOWN').toUpperCase();$('mode-badge').textContent=imported?'IMPORTED TRACE':'SERVER TRACE';$('trace-caption').textContent=imported?'Imported file contents, not an authenticated live connection. Stage events and evidence below are reproduced from that file.':'These are persisted events returned by the running Relay API. Service connections illustrate code dependencies.';displaySources(run.result?.sources||[]);const answer=run.result?.answer||run.result?.error;if(answer){$('answer').textContent=String(answer);$('answer').hidden=false;}if(!['queued','running'].includes(run.status)){$('step-number').textContent='FINISHED';$('step-title').textContent=`Run ${run.status||'loaded'}`;$('step-detail').textContent=run.result?.duration_ms!==undefined?`Server-reported total duration: ${run.result.duration_ms} ms. Inspect the trace for measured stage timing.`:'Inspect the recorded events and final result. No latency or token metrics have been invented.';} }
+    function showResult(run,imported=false){stateOrigin=imported?'IMPORTED TRACE':'SERVER TRACE';if(!stateFrames.length)seedRuntimeState(run);lastRun=run;$('export').disabled=false;for(const event of run.events||[])runtimeEvent(event);if(run.result){for(const frame of stateFrames){if(frame.stage==='final'){frame.output=copyState(run.result);frame.outputNote='Persisted run result; separate from shared state.';}}}renderState();renderRunChat(run,imported);$('metric-two').textContent=(run.status||'UNKNOWN').toUpperCase();$('mode-badge').textContent=imported?'IMPORTED TRACE':'SERVER TRACE';$('trace-caption').textContent=imported?'Imported file contents, not an authenticated live connection. Stage events and evidence below are reproduced from that file.':'These are persisted events returned by the running Relay API. Service connections illustrate code dependencies.';displaySources(run.result?.sources||[]);const answer=run.result?.answer||run.result?.error;if(answer){$('answer').textContent=String(answer);$('answer').hidden=false;}if(!['queued','running'].includes(run.status)){$('step-number').textContent='FINISHED';$('step-title').textContent=`Run ${run.status||'loaded'}`;$('step-detail').textContent=run.result?.duration_ms!==undefined?`Server-reported total duration: ${run.result.duration_ms} ms. Inspect the trace for measured stage timing.`:'Inspect the recorded events and final result. No latency or token metrics have been invented.';} }
     function detach(){source?.close();source=null;activeRun=null;setBusy(false);stopMotion();}
     function watch(id){
       source?.close();activeRun=id;setBusy(true);$('run-id').value=id;$('metric-two').textContent='CONNECTING';$('mode-badge').textContent='SERVER TRACE';source=new EventSource(`/api/runs/${id}/events`);const watching=source;
@@ -477,7 +613,46 @@
       source.addEventListener('done',event=>{if(source!==watching)return;try{const run=JSON.parse(event.data);detach();showResult(run);}catch(error){detach();notify(error.message);}});
       source.onerror=async()=>{if(source!==watching)return;$('connection-status').textContent='Event connection interrupted; reconnecting…';try{const run=await api(`/api/runs/${id}`);if(source!==watching)return;for(const event of run.events||[])runtimeEvent(event);if(!['queued','running'].includes(run.status)){detach();showResult(run);}}catch(error){if(source===watching)notify(`${error.message} You can detach and reconnect using the same run ID.`);}};
     }
-    $('connect').onclick=async()=>{hideNotice();$('connect').disabled=true;try{const health=await api('/api/health');$('connection-status').textContent=`Server reachable · ${health.model} · ${health.documents} documents · ${health.configured?'key configured; access not yet verified':'EURI_API_KEY missing'}`;$('metric-two').textContent='SERVER REACHABLE';}catch(error){notify(error.message);}finally{$('connect').disabled=busy;}};
+    let uploadedDocument=null;
+    async function refreshHealth(){const health=await api('/api/health');$('connection-status').textContent=`Server reachable · ${health.model} · ${health.documents} documents · ${health.configured?'key configured; access not yet verified':'EURI_API_KEY missing'}`;}
+    $('upload-form').onsubmit=async event=>{
+      event.preventDefault();if(busy)return;
+      const file=$('upload-file').files[0];
+      if(!file){notify('Choose a document first.');return;}
+      if(!/\.(pdf|txt|md)$/i.test(file.name)){notify('Choose a PDF, TXT or Markdown (.md) file.');return;}
+      try{sameOrigin();}catch(error){notify(error.message);return;}
+      hideNotice();setBusy(true);$('detach').disabled=true;resetRuntime();
+      uploadedDocument=null;$('upload-result').hidden=true;$('upload-chunks').hidden=true;$('upload-chunk-output').hidden=true;
+      const input={filename:file.name,bytes:file.size,content_type:file.type||'unspecified'};
+      const note='Upload changes the persistent library, not per-question shared state. Only the HTTP request and response are observed; ingestion stages are not streamed.';
+      stateFrame('upload','Upload submitted',{},note,{input,inputNote:'Selected file metadata; file bytes are sent as multipart FormData.',outputNote:'Waiting for the server to finish indexing.'});renderState();
+      $('scenario-title').textContent=`Uploading ${file.name}`;$('scenario-description').textContent=note;
+      $('step-number').textContent='UPLOAD';$('step-title').textContent='Upload and indexing in progress';$('step-detail').textContent='Waiting for POST /api/documents to return.';
+      $('upload-status').textContent=`Uploading and indexing ${file.name}…`;$('mode-badge').textContent='LIVE UPLOAD';$('metric-two').textContent='UPLOADING';
+      $('node-api').classList.add('active');showDependencies(['config','retriever','store'],['retriever','store'],'Upload code uses ingestion, embeddings and persistent storage. Settings were loaded at startup; the server does not stream individual ingestion stages.');say('user',`Upload ${file.name}`);term('upload',`POST /api/documents · ${file.name}`,'t-run');
+      try{
+        const body=new FormData();body.append('file',file);
+        const result=await api('/api/documents',{method:'POST',body,signal:AbortSignal.timeout(600000)});
+        uploadedDocument=result;
+        const summary=`${result.name}: ${result.chunks} chunks ${result.created?'indexed':'already indexed (existing document reused)'}. Ready for questions.`;
+        $('upload-status').textContent=summary;$('upload-output').textContent=JSON.stringify(result,null,2);$('upload-result').hidden=false;$('upload-result').open=true;$('upload-chunks').hidden=false;$('upload-file').value='';
+        stateFrame('upload','Upload result received',{},note,{input,output:result,inputNote:'Metadata of the file submitted to the server.',outputNote:'Actual response from POST /api/documents.'});renderState();
+        $('step-title').textContent='Document ready';$('step-detail').textContent=summary;$('scenario-title').textContent='Document upload completed';$('metric-two').textContent='INDEXED';
+        addLog('UPLOAD · server response',result);term('upload',summary,'t-ok');say('agent',summary);
+        try{await refreshHealth();}catch(error){notify(`Upload succeeded. Could not refresh server status: ${error.message}`);}
+      }catch(error){
+        const message=error.name==='TimeoutError'?'Upload response timed out. The server may still finish indexing; check the document library before retrying.':error.message;
+        $('upload-status').textContent=message;$('step-title').textContent='Upload did not return a successful result';$('step-detail').textContent=message;$('metric-two').textContent='UPLOAD ERROR';
+        stateFrame('upload','Upload error',{},note,{input,output:null,inputNote:'Metadata of the submitted file.',outputNote:message});renderState();notify(message);term('upload',message,'t-fail');
+      }finally{$('node-api').classList.remove('active');showDependencies(['config','retriever','store'],[],'These are the upload endpoint’s code dependencies. The HTTP result above reports whether indexing succeeded; individual service outcomes are not traced.');setBusy(false);}
+    };
+    $('upload-chunks').onclick=async()=>{
+      if(busy||!uploadedDocument)return;
+      hideNotice();setBusy(true);$('detach').disabled=true;
+      try{const chunks=await api(`/api/documents/${encodeURIComponent(uploadedDocument.id)}/chunks`);$('upload-chunk-output').textContent=JSON.stringify(chunks,null,2);$('upload-chunk-output').hidden=false;}
+      catch(error){notify(`Could not load chunks: ${error.message}`);}finally{setBusy(false);}
+    };
+    $('connect').onclick=async()=>{hideNotice();$('connect').disabled=true;try{await refreshHealth();$('metric-two').textContent='SERVER REACHABLE';}catch(error){notify(error.message);}finally{$('connect').disabled=busy;}};
     $('live-form').onsubmit=async event=>{event.preventDefault();if(busy)return;const query=$('live-query').value.trim();if(!query){notify('Enter a question first.');return;}hideNotice();try{sameOrigin();setBusy(true);if(!session)session=(await api('/api/sessions',{method:'POST'})).id;const request={query,session_id:session,top_k:Number($('live-k').value),document_ids:[]};const run=await api('/api/runs',post(request));resetRuntime();seedRuntimeState(request);$('scenario-title').textContent=query;$('scenario-description').textContent='Actual server run. The same conversation is used until you choose New session.';$('connection-status').textContent=`Run accepted: ${run.id}`;selectTab('trace');watch(run.id);}catch(error){setBusy(false);notify(error.message);}};
     $('attach').onclick=async()=>{if(busy)return;const id=$('run-id').value.trim();if(!/^[a-f0-9]{32}$/.test(id)){notify('Enter a valid 32-character lowercase hexadecimal run ID.');return;}hideNotice();setBusy(true);try{const run=await api(`/api/runs/${id}`);resetRuntime();seedRuntimeState(run);$('scenario-title').textContent=run.query||'Attached run';for(const event of run.events||[])runtimeEvent(event);if(['queued','running'].includes(run.status))watch(id);else{setBusy(false);showResult(run);}}catch(error){setBusy(false);notify(error.message);}};
     $('detach').onclick=()=>{const id=activeRun;detach();$('metric-two').textContent='DETACHED';notify(`Detached from ${id}. The server run continues; use Attach run to reconnect.`);};
@@ -534,7 +709,7 @@
         chip.title=ASK[key]?ASK[key].q:data.description;
         chip.onclick=()=>{
           typedQuestion=null;
-          if(mode==='live'){const question=ASK[key]?ASK[key].q:'';$('sim-input').value=question;$('live-query').value=question;return;}
+          if(mode==='live'){if(key==='upload'){$('upload-panel').scrollIntoView({behavior:reducedMotion.matches?'instant':'smooth',block:'center'});if(!busy)$('upload-file').click();return;}const question=ASK[key]?ASK[key].q:'';$('sim-input').value=question;$('live-query').value=question;return;}
           chooseScenario(key);selectTab('simulator');
         };
         $('chat-chips').append(chip);
